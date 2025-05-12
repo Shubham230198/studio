@@ -1,41 +1,58 @@
+'use client';
+
+import type { Message } from '@/app/page'; // Import Message interface
+import { useEffect, useRef } from 'react';
 import InitialPromptDisplay from './initial-prompt-display';
-// Future: import ChatMessage from './chat-message';
-// Future: import InitialInputBubble from './initial-input-bubble';
+import ChatMessage from './chat-message'; // Import ChatMessage component
+import { ScrollArea } from '@/components/ui/scroll-area';
 
-// Mock state for conversation. Set to false to show initial display.
-// In a real app, this would come from state management (e.g., Zustand, Context, Redux).
-const hasActiveConversation = false; 
-const isWaitingForResponse = false;
-const currentPrompt = "Tell me about black holes.";
+interface ChatWindowProps {
+  conversation: Message[];
+  isLoadingAI: boolean;
+}
+
+export default function ChatWindow({ conversation, isLoadingAI }: ChatWindowProps) {
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [conversation, isLoadingAI]);
 
 
-export default function ChatWindow() {
-  if (!hasActiveConversation) {
-    // If there are no messages at all, show the welcome/initial prompt.
+  if (conversation.length === 0 && !isLoadingAI) {
     return <InitialPromptDisplay />;
   }
 
-  // If there's an active conversation or a prompt has been submitted and waiting for response
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-grow space-y-6">
-        {/* Example of how messages might be rendered. Replace with actual data and ChatMessage component. */}
-        {/* 
-        <ChatMessage sender="user" message="Hello AI, can you explain quantum entanglement?" />
-        <ChatMessage sender="ai" message="Certainly! Quantum entanglement is a phenomenon where..." isLoading={false} /> 
-        */}
-
-        {/* Example of an "Initial Input Bubble" or staged prompt display */}
-        {/* {isWaitingForResponse && currentPrompt && (
-          <InitialInputBubble prompt={currentPrompt} />
-        )} */}
-
-        <p className="text-center text-muted-foreground p-8">
-          Conversation messages will appear here.
-          <br />
-          (Chat history and message rendering to be implemented)
-        </p>
+    <ScrollArea className="h-full flex-grow" ref={scrollAreaRef}>
+      <div className="flex flex-col space-y-4 p-4">
+        {conversation.map((msg) => (
+          <ChatMessage
+            key={msg.id}
+            sender={msg.sender}
+            message={msg.text}
+            timestamp={msg.timestamp}
+            isLoading={msg.isLoading}
+          />
+        ))}
+        {isLoadingAI &&
+          conversation.length > 0 &&
+          conversation[conversation.length - 1].sender === 'user' && (
+            <ChatMessage
+              key="ai-loading-indicator"
+              sender="ai"
+              message=""
+              isLoading={true}
+              timestamp={new Date()}
+            />
+          )}
+        <div ref={messagesEndRef} />
       </div>
-    </div>
+    </ScrollArea>
   );
 }

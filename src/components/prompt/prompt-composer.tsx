@@ -3,24 +3,26 @@
 import { useState, useRef, useEffect, type FormEvent, useCallback } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Mic, SendHorizonal, Sparkles, Search as SearchIcon, Brain } from 'lucide-react'; // Renamed Search to SearchIcon
+import { Mic, SendHorizonal, Sparkles, Search as SearchIcon, Brain, Loader2 } from 'lucide-react';
 import SuggestionBar from './suggestion-bar';
 import { generateSuggestions, type AdaptiveSuggestionsOutput } from '@/ai/flows/adaptive-suggestions';
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-
-// Icon mapping for suggestions - keys should match possible suggestion strings from AI
 const suggestionIcons: { [key: string]: React.ElementType } = {
   Search: SearchIcon,
   Reason: Brain,
   'Deep Research': Sparkles,
-  // Add more icons as your AI might suggest different actions
-  "Summarize": Brain, // Example
-  "Translate": Sparkles, // Example
+  Summarize: Brain,
+  Translate: Sparkles,
 };
 
-export default function PromptComposer() {
+interface PromptComposerProps {
+  onSendMessage: (promptText: string) => Promise<void>;
+  isLoading: boolean;
+}
+
+export default function PromptComposer({ onSendMessage, isLoading }: PromptComposerProps) {
   const [inputValue, setInputValue] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
@@ -29,34 +31,27 @@ export default function PromptComposer() {
 
   const handleInputChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInputValue(event.target.value);
-    // Auto-resize textarea
     if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto'; // Reset height to shrink if text is deleted
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`; // Max height 200px
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
     }
   };
 
   const handleSubmit = useCallback(async (event?: FormEvent<HTMLFormElement> | React.KeyboardEvent<HTMLTextAreaElement>) => {
     event?.preventDefault();
-    if (!inputValue.trim()) return;
+    if (!inputValue.trim() || isLoading) return;
     
-    // Placeholder for actual message sending logic
-    console.log('Sending prompt:', inputValue);
-    toast({
-      title: "Prompt Sent",
-      description: `Your prompt: "${inputValue.substring(0,30)}..." is being processed.`,
-    });
-    
-    // In a real app, you would handle the conversation flow here.
-    // For this example, we clear input and fetch new suggestions based on the submitted input.
     const submittedValue = inputValue;
+    await onSendMessage(submittedValue);
+    
     setInputValue(''); 
     if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto'; // Reset height
+        textareaRef.current.style.height = 'auto';
     }
-    // Fetch suggestions for the submitted input
-    fetchAdaptiveSuggestions(submittedValue);
-  }, [inputValue, toast]);
+    // Fetch suggestions for the submitted input, or clear if not desired
+    // For now, let's keep fetching, could be based on AI response later
+    fetchAdaptiveSuggestions(submittedValue); 
+  }, [inputValue, isLoading, onSendMessage, toast]); // Added isLoading and onSendMessage
   
   const fetchAdaptiveSuggestions = useCallback(async (currentInput: string) => {
     if (!currentInput.trim()) {
@@ -66,10 +61,10 @@ export default function PromptComposer() {
     setIsGeneratingSuggestions(true);
     try {
       const result: AdaptiveSuggestionsOutput = await generateSuggestions({ userInput: currentInput });
-      setSuggestions(result.suggestions || []); // Ensure suggestions is always an array
+      setSuggestions(result.suggestions || []);
     } catch (error) {
       console.error("Error generating suggestions:", error);
-      setSuggestions([]); // Clear suggestions on error or show an error suggestion
+      setSuggestions([]); 
       toast({
         title: "Suggestion Error",
         description: "Could not generate follow-up suggestions.",
@@ -80,20 +75,17 @@ export default function PromptComposer() {
     }
   }, [toast]);
 
-  // Debounce fetching suggestions as user types
   useEffect(() => {
     if (!inputValue.trim()) {
-      setSuggestions([]); // Clear suggestions if input is empty
+      setSuggestions([]);
       return;
     }
-    // Only fetch suggestions if user has typed something significant
-    if (inputValue.length < 3 && !inputValue.includes(' ')) { // Basic heuristic
+    if (inputValue.length < 3 && !inputValue.includes(' ')) {
         return;
     }
-
     const handler = setTimeout(() => {
       fetchAdaptiveSuggestions(inputValue);
-    }, 750); // Debounce time: 750ms
+    }, 750); 
 
     return () => {
       clearTimeout(handler);
@@ -102,13 +94,12 @@ export default function PromptComposer() {
 
 
   return (
-    <div className="w-full max-w-3xl mx-auto"> {/* Max width for composer area */}
+    <div className="w-full max-w-3xl mx-auto">
       <SuggestionBar 
         suggestions={suggestions} 
         onSuggestionClick={(suggestion) => {
-          setInputValue(prev => prev ? `${prev} ${suggestion}` : suggestion); // Append suggestion or set if empty
+          setInputValue(prev => prev ? `${prev} ${suggestion}` : suggestion); 
           textareaRef.current?.focus();
-          // Wait for state update then resize
           setTimeout(() => {
             if (textareaRef.current) {
                 textareaRef.current.style.height = 'auto';
@@ -128,18 +119,19 @@ export default function PromptComposer() {
           className="flex-1 resize-none min-h-[44px] max-h-[200px] rounded-xl py-2.5 pr-20 pl-4 border-border focus-visible:ring-primary/80 text-base bg-input placeholder:text-muted-foreground shadow-sm"
           rows={1}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
+            if (e.key === 'Enter' && !e.shiftKey && !isLoading) { // Prevent submit if loading
               e.preventDefault();
               handleSubmit(e);
             }
           }}
           aria-label="Chat input"
+          disabled={isLoading} // Disable textarea when loading
         />
         <div className="absolute right-3 bottom-[9px] flex items-center gap-1">
           <TooltipProvider delayDuration={300}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button type="button" variant="ghost" size="icon" className="text-muted-foreground hover:text-primary h-8 w-8" aria-label="Voice input">
+                <Button type="button" variant="ghost" size="icon" className="text-muted-foreground hover:text-primary h-8 w-8" aria-label="Voice input" disabled={isLoading}>
                   <Mic className="h-5 w-5" />
                 </Button>
               </TooltipTrigger>
@@ -151,13 +143,13 @@ export default function PromptComposer() {
                   type="submit" 
                   size="icon" 
                   className="bg-primary hover:bg-primary/90 text-primary-foreground h-8 w-8 rounded-lg disabled:bg-muted disabled:text-muted-foreground" 
-                  disabled={!inputValue.trim()} 
+                  disabled={!inputValue.trim() || isLoading} 
                   aria-label="Send message"
                 >
-                  <SendHorizonal className="h-5 w-5" />
+                  {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <SendHorizonal className="h-5 w-5" />}
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="top"><p>Send message</p></TooltipContent>
+              <TooltipContent side="top"><p>{isLoading ? "Processing..." : "Send message"}</p></TooltipContent>
             </Tooltip>
           </TooltipProvider>
         </div>
