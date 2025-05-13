@@ -2,7 +2,7 @@
 import SidebarHeaderComponent from './sidebar-header';
 import SidebarSearchActions from './sidebar-search-actions';
 import SidebarHistorySection from './sidebar-history-section';
-import SidebarFooterComponent from './sidebar-footer';
+// import SidebarFooterComponent from './sidebar-footer'; // Removed footer import
 import type { ChatSession } from '@/types/chat';
 import { subDays, isToday, isYesterday } from 'date-fns';
 
@@ -97,9 +97,12 @@ export default function SidebarNavigation({
         )}
       </nav>
       
+      {/* Removed SidebarFooterComponent */}
+      {/* 
       <div className="p-4 border-t border-sidebar-border mt-auto">
         <SidebarFooterComponent />
-      </div>
+      </div> 
+      */}
     </aside>
   );
 }

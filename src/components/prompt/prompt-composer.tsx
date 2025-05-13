@@ -4,11 +4,12 @@
 import { useState, useRef, useEffect, type FormEvent, useCallback } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Mic, SendHorizonal, Sparkles, Search as SearchIcon, Brain, Loader2 } from 'lucide-react';
+import { Mic, SendHorizonal, Sparkles, Search as SearchIcon, Brain, Loader2, MicOff } from 'lucide-react';
 import SuggestionBar from './suggestion-bar';
 import { generateSuggestions, type AdaptiveSuggestionsOutput } from '@/ai/flows/adaptive-suggestions';
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from '@/lib/utils';
 
 const suggestionIcons: { [key: string]: React.ElementType } = {
   Search: SearchIcon,
@@ -27,15 +28,21 @@ export default function PromptComposer({ onSendMessage, isLoading }: PromptCompo
   const [inputValue, setInputValue] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const speechRecognitionRef = useRef<SpeechRecognition | null>(null);
   const { toast } = useToast();
 
-  const handleInputChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInputValue(event.target.value);
+  const adjustTextareaHeight = useCallback(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
       textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
     }
+  }, []);
+
+  const handleInputChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInputValue(event.target.value);
+    adjustTextareaHeight();
   };
 
   const handleSubmit = useCallback(async (event?: FormEvent<HTMLFormElement> | React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -64,19 +71,16 @@ export default function PromptComposer({ onSendMessage, isLoading }: PromptCompo
     } catch (error) {
       console.error("Error generating suggestions:", error);
       setSuggestions([]); 
-      // Do not toast here by default as it can be noisy if API has transient issues.
-      // Consider a more subtle indicator or logging.
     } finally {
       setIsGeneratingSuggestions(false);
     }
-  }, []); // Removed toast from dependencies as it doesn't change
+  }, []);
 
   useEffect(() => {
     if (!inputValue.trim()) {
       setSuggestions([]);
       return;
     }
-    // Only fetch suggestions if input is reasonably long or contains a space
     if (inputValue.length < 5 && !inputValue.includes(' ')) {
         return;
     }
@@ -89,16 +93,126 @@ export default function PromptComposer({ onSendMessage, isLoading }: PromptCompo
     };
   }, [inputValue, fetchAdaptiveSuggestions]);
 
-  // Effect to focus and adjust height on initial render or when inputValue becomes empty (e.g. new chat)
   useEffect(() => {
     if (textareaRef.current) {
-      if (inputValue === '') { // Reset height if input is cleared (new chat)
+      if (inputValue === '') { 
           textareaRef.current.style.height = 'auto';
       }
-      // textareaRef.current.focus(); // Optionally focus on mount/reset
     }
   }, [inputValue]);
 
+  // Speech Recognition Logic
+  useEffect(() => {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      // Speech recognition not supported
+      return;
+    }
+
+    const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognitionAPI) return;
+
+    speechRecognitionRef.current = new SpeechRecognitionAPI();
+    const recognition = speechRecognitionRef.current;
+    recognition.continuous = false;
+    recognition.interimResults = true; 
+    recognition.lang = 'en-US';
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      let interimTranscript = '';
+      let finalTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript;
+        } else {
+          interimTranscript += event.results[i][0].transcript;
+        }
+      }
+      // Show interim results, append final transcript
+      setInputValue(prev => {
+        // If there's a final transcript, replace the last interim part with it.
+        // This logic can be tricky. A simpler approach for now is to just append or replace.
+        // For this implementation, we'll just use the final transcript if available,
+        // or the interim one. When final, it replaces the input.
+        if (finalTranscript) {
+          return prev + (prev.endsWith(' ') || prev === '' ? '' : ' ') + finalTranscript.trim() + ' ';
+        }
+        // If only interim, we might want to show it temporarily without committing to state changes that trigger other effects
+        // For now, let's update with interim to give feedback, but this can cause rapid suggestion fetching.
+        // A better UX might be to display interim in a different way.
+        // Simple approach for now: only update with final or when recognition ends
+        return prev; 
+      });
+      if (finalTranscript) adjustTextareaHeight();
+    };
+
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      console.error('Speech recognition error', event.error);
+      let errorMsg = 'Speech recognition error. Please try again.';
+      if (event.error === 'no-speech') {
+        errorMsg = 'No speech was detected. Please try again.';
+      } else if (event.error === 'audio-capture') {
+        errorMsg = 'Microphone problem. Please ensure it is enabled and working.';
+      } else if (event.error === 'not-allowed') {
+        errorMsg = 'Permission to use microphone was denied. Please enable it in your browser settings.';
+      }
+      toast({
+        title: "Voice Input Error",
+        description: errorMsg,
+        variant: "destructive",
+      });
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+      // Ensure final adjustment of textarea height after speech ends
+      // and input value is set with the final transcript.
+      setTimeout(adjustTextareaHeight, 0);
+    };
+
+    return () => {
+      if (recognition) {
+        recognition.stop();
+      }
+    };
+  }, [toast, adjustTextareaHeight]);
+
+  const toggleListening = async () => {
+    if (!speechRecognitionRef.current) {
+      toast({
+        title: "Voice Input Not Supported",
+        description: "Your browser does not support speech recognition.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (isListening) {
+      speechRecognitionRef.current.stop();
+    } else {
+      try {
+        // Check for microphone permission implicitly by trying to start
+        // Or explicitly: navigator.permissions.query({ name: 'microphone' })
+        // For simplicity, direct start attempt is used. Error handling will catch permission issues.
+        speechRecognitionRef.current.start();
+        setIsListening(true);
+        toast({
+          title: "Listening...",
+          description: "Speak now. Click the mic again to stop.",
+        });
+      } catch (error) {
+         // This catch might not always fire for permission issues immediately,
+         // as start() can be async and errors handled by recognition.onerror
+        console.error("Error starting speech recognition:", error);
+        toast({
+          title: "Could Not Start Voice Input",
+          description: "Please ensure your microphone is connected and permission is granted.",
+          variant: "destructive",
+        });
+        setIsListening(false); // Ensure state is correct
+      }
+    }
+  };
 
   return (
     <div className="w-full max-w-3xl mx-auto">
@@ -107,13 +221,7 @@ export default function PromptComposer({ onSendMessage, isLoading }: PromptCompo
         onSuggestionClick={(suggestion) => {
           setInputValue(prev => prev ? `${prev} ${suggestion}` : suggestion); 
           textareaRef.current?.focus();
-          // Let handleInputChange adjust height
-          setTimeout(() => {
-            if (textareaRef.current) {
-                textareaRef.current.style.height = 'auto';
-                textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
-            }
-          }, 0);
+          setTimeout(adjustTextareaHeight, 0);
         }}
         isLoading={isGeneratingSuggestions}
         iconMap={suggestionIcons}
@@ -123,7 +231,7 @@ export default function PromptComposer({ onSendMessage, isLoading }: PromptCompo
           ref={textareaRef}
           value={inputValue}
           onChange={handleInputChange}
-          placeholder="What can I help with?"
+          placeholder={isListening ? "Listening..." : "What can I help with?"}
           className="flex-1 resize-none min-h-[44px] max-h-[200px] rounded-xl py-2.5 pr-20 pl-4 border-border focus-visible:ring-primary/80 text-base bg-input placeholder:text-muted-foreground shadow-sm"
           rows={1}
           onKeyDown={(e) => {
@@ -139,11 +247,24 @@ export default function PromptComposer({ onSendMessage, isLoading }: PromptCompo
           <TooltipProvider delayDuration={300}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button type="button" variant="ghost" size="icon" className="text-muted-foreground hover:text-primary h-8 w-8" aria-label="Voice input" disabled={isLoading}>
-                  <Mic className="h-5 w-5" />
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="icon" 
+                  className={cn(
+                    "text-muted-foreground hover:text-primary h-8 w-8",
+                    isListening && "text-primary animate-pulse"
+                  )} 
+                  aria-label={isListening ? "Stop listening" : "Voice input"} 
+                  onClick={toggleListening}
+                  disabled={isLoading} // Disable while main AI is processing
+                >
+                  {isListening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="top"><p>Voice input (not implemented)</p></TooltipContent>
+              <TooltipContent side="top">
+                <p>{isListening ? "Stop listening" : "Start voice input"}</p>
+              </TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
