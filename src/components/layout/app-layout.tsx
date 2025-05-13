@@ -1,3 +1,4 @@
+
 import type { ReactNode } from 'react';
 
 interface AppLayoutProps {
@@ -17,7 +18,7 @@ export default function AppLayout({ sidebar, chatWindow, promptComposer }: AppLa
       {/* Main content column */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Chat window: takes up available space, scrollable */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-8">
+        <main className="flex-1 overflow-y-auto"> {/* Removed p-4/p-8 for ChatWindow to control its own padding */}
           {chatWindow}
         </main>
         

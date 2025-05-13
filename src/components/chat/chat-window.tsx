@@ -1,9 +1,10 @@
+
 'use client';
 
-import type { Message } from '@/app/page'; // Import Message interface
+import type { Message } from '@/types/chat'; // Updated import path
 import { useEffect, useRef } from 'react';
 import InitialPromptDisplay from './initial-prompt-display';
-import ChatMessage from './chat-message'; // Import ChatMessage component
+import ChatMessage from './chat-message';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ChatWindowProps {
@@ -25,24 +26,26 @@ export default function ChatWindow({ conversation, isLoadingAI }: ChatWindowProp
 
 
   if (conversation.length === 0 && !isLoadingAI) {
-    return <InitialPromptDisplay />;
+    return (
+      <div className="h-full p-4 md:p-8"> {/* Added padding here */}
+        <InitialPromptDisplay />
+      </div>
+    );
   }
 
   return (
     <ScrollArea className="h-full flex-grow" ref={scrollAreaRef}>
-      <div className="flex flex-col space-y-4 p-4">
+      <div className="flex flex-col space-y-4 p-4 md:p-8"> {/* Added padding here */}
         {conversation.map((msg) => (
           <ChatMessage
             key={msg.id}
             sender={msg.sender}
             message={msg.text}
-            timestamp={msg.timestamp}
+            timestamp={new Date(msg.timestamp)} // Ensure timestamp is a Date object
             isLoading={msg.isLoading}
           />
         ))}
-        {isLoadingAI &&
-          conversation.length > 0 &&
-          conversation[conversation.length - 1].sender === 'user' && (
+        {isLoadingAI && (
             <ChatMessage
               key="ai-loading-indicator"
               sender="ai"

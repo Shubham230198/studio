@@ -1,6 +1,7 @@
+
 'use client';
 
-import type { Message } from '@/app/page';
+import type { Message } from '@/types/chat'; // Updated import path
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Bot, User, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -18,7 +19,10 @@ interface ChatMessageProps {
 export default function ChatMessage({ sender, message, timestamp, isLoading }: ChatMessageProps) {
   const isUser = sender === 'user';
   
-  const formattedTimestamp = timestamp ? formatDistanceToNow(timestamp, { addSuffix: true }) : '';
+  // Ensure timestamp is a Date object before formatting
+  const validTimestamp = timestamp instanceof Date ? timestamp : new Date(timestamp);
+  const formattedTimestamp = formatDistanceToNow(validTimestamp, { addSuffix: true });
+
 
   return (
     <div className={cn('flex items-start gap-3', isUser ? 'justify-end' : 'justify-start')}>
@@ -48,7 +52,7 @@ export default function ChatMessage({ sender, message, timestamp, isLoading }: C
             )}
           </CardContent>
         </Card>
-        {timestamp && !isLoading && (
+        {!isLoading && (
           <p className="text-xs text-muted-foreground px-1">
             {formattedTimestamp}
           </p>

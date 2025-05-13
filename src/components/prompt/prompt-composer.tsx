@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef, useEffect, type FormEvent, useCallback } from 'react';
@@ -46,12 +47,10 @@ export default function PromptComposer({ onSendMessage, isLoading }: PromptCompo
     
     setInputValue(''); 
     if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto';
+        textareaRef.current.style.height = 'auto'; // Reset height after sending
     }
-    // Fetch suggestions for the submitted input, or clear if not desired
-    // For now, let's keep fetching, could be based on AI response later
-    fetchAdaptiveSuggestions(submittedValue); 
-  }, [inputValue, isLoading, onSendMessage, toast]); // Added isLoading and onSendMessage
+    setSuggestions([]); // Clear suggestions after sending
+  }, [inputValue, isLoading, onSendMessage]);
   
   const fetchAdaptiveSuggestions = useCallback(async (currentInput: string) => {
     if (!currentInput.trim()) {
@@ -65,22 +64,20 @@ export default function PromptComposer({ onSendMessage, isLoading }: PromptCompo
     } catch (error) {
       console.error("Error generating suggestions:", error);
       setSuggestions([]); 
-      toast({
-        title: "Suggestion Error",
-        description: "Could not generate follow-up suggestions.",
-        variant: "destructive",
-      });
+      // Do not toast here by default as it can be noisy if API has transient issues.
+      // Consider a more subtle indicator or logging.
     } finally {
       setIsGeneratingSuggestions(false);
     }
-  }, [toast]);
+  }, []); // Removed toast from dependencies as it doesn't change
 
   useEffect(() => {
     if (!inputValue.trim()) {
       setSuggestions([]);
       return;
     }
-    if (inputValue.length < 3 && !inputValue.includes(' ')) {
+    // Only fetch suggestions if input is reasonably long or contains a space
+    if (inputValue.length < 5 && !inputValue.includes(' ')) {
         return;
     }
     const handler = setTimeout(() => {
@@ -92,6 +89,16 @@ export default function PromptComposer({ onSendMessage, isLoading }: PromptCompo
     };
   }, [inputValue, fetchAdaptiveSuggestions]);
 
+  // Effect to focus and adjust height on initial render or when inputValue becomes empty (e.g. new chat)
+  useEffect(() => {
+    if (textareaRef.current) {
+      if (inputValue === '') { // Reset height if input is cleared (new chat)
+          textareaRef.current.style.height = 'auto';
+      }
+      // textareaRef.current.focus(); // Optionally focus on mount/reset
+    }
+  }, [inputValue]);
+
 
   return (
     <div className="w-full max-w-3xl mx-auto">
@@ -100,6 +107,7 @@ export default function PromptComposer({ onSendMessage, isLoading }: PromptCompo
         onSuggestionClick={(suggestion) => {
           setInputValue(prev => prev ? `${prev} ${suggestion}` : suggestion); 
           textareaRef.current?.focus();
+          // Let handleInputChange adjust height
           setTimeout(() => {
             if (textareaRef.current) {
                 textareaRef.current.style.height = 'auto';
@@ -119,13 +127,13 @@ export default function PromptComposer({ onSendMessage, isLoading }: PromptCompo
           className="flex-1 resize-none min-h-[44px] max-h-[200px] rounded-xl py-2.5 pr-20 pl-4 border-border focus-visible:ring-primary/80 text-base bg-input placeholder:text-muted-foreground shadow-sm"
           rows={1}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey && !isLoading) { // Prevent submit if loading
+            if (e.key === 'Enter' && !e.shiftKey && !isLoading) { 
               e.preventDefault();
               handleSubmit(e);
             }
           }}
           aria-label="Chat input"
-          disabled={isLoading} // Disable textarea when loading
+          disabled={isLoading} 
         />
         <div className="absolute right-3 bottom-[9px] flex items-center gap-1">
           <TooltipProvider delayDuration={300}>
