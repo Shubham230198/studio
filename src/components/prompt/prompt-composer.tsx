@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef, useEffect, type FormEvent, useCallback, type MouseEvent, type TouchEvent } from 'react';
@@ -32,7 +31,7 @@ export default function PromptComposer({ onSendMessage, isLoading }: PromptCompo
   const [isListening, setIsListening] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const speechRecognitionRef = useRef<SpeechRecognition | null>(null);
-  const { toast } = useToast(); // Removed dismissToast and activeToastId related logic
+  const { toast } = useToast();
 
 
   useEffect(() => {
@@ -128,14 +127,11 @@ export default function PromptComposer({ onSendMessage, isLoading }: PromptCompo
 
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
       console.error('Speech recognition error', event.error);
-      // Removed toast notification for speech errors
       setIsListening(false);
     };
 
     recognition.onend = () => {
       setIsListening(false);
-      // Removed toast dismissal logic
-
       const finalTranscript = inputValueRef.current.trim();
 
       if (finalTranscript && !isLoading) {
@@ -145,16 +141,15 @@ export default function PromptComposer({ onSendMessage, isLoading }: PromptCompo
         }).catch(error => {
             console.error("Error sending voice message:", error);
         });
-      } else {
+      } else if (!finalTranscript) { // Clear input if transcript was empty (e.g. mic released without speech)
         setInputValue(''); 
       }
     };
 
     return () => {
-      if (recognition) {
+      if (recognition && isListening) { // Ensure to stop recognition if component unmounts while listening
         recognition.stop(); 
       }
-      // Removed toast dismissal logic on unmount
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, onSendMessage, toast]);
@@ -166,7 +161,6 @@ export default function PromptComposer({ onSendMessage, isLoading }: PromptCompo
 
     if (!speechRecognitionRef.current) {
       console.error("Speech recognition not supported or not initialized.");
-      // Removed toast for not supported
       return;
     }
 
@@ -176,10 +170,8 @@ export default function PromptComposer({ onSendMessage, isLoading }: PromptCompo
     try {
       speechRecognitionRef.current.start();
       setIsListening(true);
-      // Removed toast notification for "Listening..."
     } catch (error) {
       console.error("Error starting speech recognition:", error);
-      // Removed toast for error starting voice input
       setIsListening(false);
     }
   }, [isLoading, isListening]);
@@ -188,8 +180,8 @@ export default function PromptComposer({ onSendMessage, isLoading }: PromptCompo
     event.preventDefault();
     if (isListening && speechRecognitionRef.current) {
       speechRecognitionRef.current.stop(); 
+      // onend will handle sending the message
     }
-    // Removed toast dismissal logic
   }, [isListening]);
 
 
@@ -209,7 +201,7 @@ export default function PromptComposer({ onSendMessage, isLoading }: PromptCompo
           ref={textareaRef}
           value={inputValue}
           onChange={handleInputChange}
-          placeholder={isListening ? "Say something..." : "What can I help with?"}
+          placeholder={isListening ? "Listening..." : "What can I help with?"}
           className="flex-1 resize-none min-h-[44px] max-h-[200px] rounded-xl py-2.5 pr-12 pl-4 border-border focus-visible:ring-primary/80 text-base bg-input placeholder:text-muted-foreground shadow-sm"
           rows={1}
           onKeyDown={(e) => {
@@ -242,7 +234,7 @@ export default function PromptComposer({ onSendMessage, isLoading }: PromptCompo
       </form>
 
       {/* Mic Button - Floating Action Button style */}
-      <div className="absolute right-2 bottom-[calc(44px+12px)] z-20 md:right-4 md:bottom-[calc(44px+16px)]">
+      <div className="absolute right-2 bottom-[calc(44px+16px)] z-20 md:right-4 md:bottom-[calc(44px+20px)]">
          <TooltipProvider delayDuration={300}>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -274,4 +266,3 @@ export default function PromptComposer({ onSendMessage, isLoading }: PromptCompo
     </div>
   );
 }
-
