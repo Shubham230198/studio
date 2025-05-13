@@ -19,8 +19,6 @@ import {
   saveActiveChatId
 } from '@/lib/storage';
 
-// Message interface moved to @/types/chat
-
 export default function HomePage() {
   const [allConversations, setAllConversations] = useState<Record<string, Message[]>>({});
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
@@ -28,7 +26,6 @@ export default function HomePage() {
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const { toast } = useToast();
 
-  // Load data from localStorage on initial mount
   useEffect(() => {
     const loadedSessions = loadChatSessions();
     const loadedConversations = loadConversations();
@@ -40,13 +37,12 @@ export default function HomePage() {
     if (loadedActiveChatId && loadedSessions.find(s => s.id === loadedActiveChatId)) {
       setActiveChatId(loadedActiveChatId);
     } else if (loadedSessions.length > 0) {
-      setActiveChatId(loadedSessions[0].id); // Default to the most recent session if active one is invalid
+      setActiveChatId(loadedSessions[0].id); 
     } else {
       setActiveChatId(null);
     }
   }, []);
 
-  // Save to localStorage whenever relevant state changes
   useEffect(() => {
     saveChatSessions(chatSessions);
   }, [chatSessions]);
@@ -59,11 +55,11 @@ export default function HomePage() {
     saveActiveChatId(activeChatId);
   }, [activeChatId]);
 
-  const handleNewChat = useCallback(() => {
+  const handleNewChatInternal = useCallback(() => {
     setActiveChatId(null);
   }, []);
 
-  const handleSelectChat = useCallback((chatId: string) => {
+  const handleSelectChatInternal = useCallback((chatId: string) => {
     setActiveChatId(chatId);
   }, []);
 
@@ -82,7 +78,6 @@ export default function HomePage() {
     };
 
     if (!currentChatId) {
-      // Start a new chat session
       currentChatId = crypto.randomUUID();
       const newSession: ChatSession = {
         id: currentChatId,
@@ -101,7 +96,6 @@ export default function HomePage() {
         ...prevConversations,
         [currentChatId!]: [...(prevConversations[currentChatId!] || []), userMessage],
       }));
-      // Update timestamp of existing session to bring it to top
       setChatSessions(prevSessions => 
         prevSessions.map(s => s.id === currentChatId ? {...s, timestamp: new Date()} : s)
         .sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
@@ -138,15 +132,13 @@ export default function HomePage() {
         [currentChatId!]: [...(prevConversations[currentChatId!] || []), errorMessage],
       }));
        if (newSessionCreated && currentChatId) {
-        // If session creation failed with AI, remove the session
-        // This is a simple rollback, more sophisticated logic might be needed
         setChatSessions(prev => prev.filter(s => s.id !== currentChatId));
         setAllConversations(prev => {
             const copy = {...prev};
             delete copy[currentChatId!];
             return copy;
         });
-        setActiveChatId(null); // Go back to new chat state
+        setActiveChatId(null); 
       }
     } finally {
       setIsLoadingAI(false);
@@ -157,28 +149,35 @@ export default function HomePage() {
 
   return (
     <AppLayout
-      sidebar={
+      sidebar={(closeSheet?: () => void) => (
         <SidebarNavigation 
           sessions={chatSessions}
           activeChatId={activeChatId}
-          onSelectChat={handleSelectChat}
-          onNewChat={handleNewChat}
+          onSelectChat={(chatId) => {
+            handleSelectChatInternal(chatId);
+            closeSheet?.(); 
+          }}
+          onNewChat={() => {
+            handleNewChatInternal();
+            closeSheet?.(); 
+          }}
         />
-      }
+      )}
       chatWindow={
         <ChatWindow
           conversation={currentConversation}
           isLoadingAI={isLoadingAI && currentConversation.length > 0 && currentConversation[currentConversation.length - 1].sender === 'user'}
-          key={activeChatId || 'new-chat'} // Add key to re-mount ChatWindow on chat change
+          key={activeChatId || 'new-chat'}
         />
       }
       promptComposer={
         <PromptComposer
           onSendMessage={handleSendMessage}
           isLoading={isLoadingAI}
-          key={`composer-${activeChatId || 'new'}`} // Add key to reset composer on new chat
+          key={`composer-${activeChatId || 'new'}`}
         />
       }
+      onNewChat={handleNewChatInternal} 
     />
   );
 }
