@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { Message } from '@/types/chat'; // Updated import path
@@ -14,9 +13,16 @@ interface ChatMessageProps {
   message: string;
   timestamp: Date;
   isLoading?: boolean;
+  components?: React.ReactNode;
 }
 
-export default function ChatMessage({ sender, message, timestamp, isLoading }: ChatMessageProps) {
+export default function ChatMessage({ 
+  sender, 
+  message, 
+  timestamp, 
+  isLoading,
+  components 
+}: ChatMessageProps) {
   const isUser = sender === 'user';
   
   // Ensure timestamp is a Date object before formatting
@@ -48,7 +54,14 @@ export default function ChatMessage({ sender, message, timestamp, isLoading }: C
                 <span>Thinking...</span>
               </div>
             ) : (
-              message
+              <>
+                {message}
+                {components && (
+                  <div className="mt-4">
+                    {components}
+                  </div>
+                )}
+              </>
             )}
           </CardContent>
         </Card>

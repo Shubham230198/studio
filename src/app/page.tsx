@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { ReactNode } from 'react';
@@ -18,6 +17,10 @@ import {
   loadActiveChatId,
   saveActiveChatId
 } from '@/lib/storage';
+import { planItineraryFlow } from '@/ai/flows/plan-itinerary';
+import type { TravelQuery } from '@/types/travel';
+import { FlightOptions } from '@/components/travel/flight-options';
+import { ItinerarySummary } from '@/components/travel/itinerary-summary';
 
 export default function HomePage() {
   const [allConversations, setAllConversations] = useState<Record<string, Message[]>>({});
@@ -25,6 +28,7 @@ export default function HomePage() {
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const { toast } = useToast();
+  const [travelQueries, setTravelQueries] = useState<Record<string, TravelQuery>>({});
 
   useEffect(() => {
     const loadedSessions = loadChatSessions();
@@ -103,17 +107,91 @@ export default function HomePage() {
     }
     
     try {
-      const aiResponse: ChatFlowOutput = await chatFlow({ prompt: promptText });
-      const aiMessage: Message = {
-        id: crypto.randomUUID(),
-        sender: 'ai',
-        text: aiResponse.response,
-        timestamp: new Date(),
-      };
-      setAllConversations(prevConversations => ({
-        ...prevConversations,
-        [currentChatId!]: [...(prevConversations[currentChatId!] || []), aiMessage],
-      }));
+      // Check if this is a travel-related query
+      const isTravelQuery = promptText.toLowerCase().includes('flight') || 
+                           promptText.toLowerCase().includes('travel') ||
+                           promptText.toLowerCase().includes('trip');
+
+      if (isTravelQuery) {
+        const result = await planItineraryFlow({ 
+          userMessage: promptText,
+          previousQuery: travelQueries[currentChatId!],
+          chatContext: currentChatId ? allConversations[currentChatId] : undefined
+        });
+
+        // Update travel query state for this chat
+        if ('flights' in result) {
+          setTravelQueries(prev => ({
+            ...prev,
+            [currentChatId!]: {
+              originAirport: result.flights[0]?.originAirport || null,
+              destinationAirport: result.flights[0]?.destinationAirport || null,
+              departDate: null, // You might want to extract this from the flights data
+              passengerCount: null, // You might want to extract this from the flights data
+            }
+          }));
+        }
+
+        if ('ask' in result) {
+          // Handle follow-up question
+          const aiMessage: Message = {
+            id: crypto.randomUUID(),
+            sender: 'ai',
+            text: result.ask,
+            timestamp: new Date(),
+          };
+          setAllConversations(prevConversations => ({
+            ...prevConversations,
+            [currentChatId!]: [...(prevConversations[currentChatId!] || []), aiMessage],
+          }));
+        } else if ('flights' in result) {
+          // Handle direct flights result
+          const aiMessage: Message = {
+            id: crypto.randomUUID(),
+            sender: 'ai',
+            text: 'Here are your flight options:',
+            timestamp: new Date(),
+            components: (
+              <FlightOptions flights={result.flights} />
+            ),
+          };
+          setAllConversations(prevConversations => ({
+            ...prevConversations,
+            [currentChatId!]: [...(prevConversations[currentChatId!] || []), aiMessage],
+          }));
+        } else {
+          // Handle complete plan (legacy)
+          const aiMessage: Message = {
+            id: crypto.randomUUID(),
+            sender: 'ai',
+            text: result.plan.summary,
+            timestamp: new Date(),
+            components: (
+              <div className="space-y-6">
+                <FlightOptions flights={result.plan.flights} />
+                <ItinerarySummary plan={result.plan} />
+              </div>
+            ),
+          };
+          setAllConversations(prevConversations => ({
+            ...prevConversations,
+            [currentChatId!]: [...(prevConversations[currentChatId!] || []), aiMessage],
+          }));
+        }
+      } else {
+        // Handle regular chat flow
+        const aiResponse: ChatFlowOutput = await chatFlow({ prompt: promptText });
+        const aiMessage: Message = {
+          id: crypto.randomUUID(),
+          sender: 'ai',
+          text: aiResponse.response,
+          timestamp: new Date(),
+        };
+        setAllConversations(prevConversations => ({
+          ...prevConversations,
+          [currentChatId!]: [...(prevConversations[currentChatId!] || []), aiMessage],
+        }));
+      }
     } catch (error) {
       console.error("Error getting AI response:", error);
       toast({
@@ -131,19 +209,19 @@ export default function HomePage() {
         ...prevConversations,
         [currentChatId!]: [...(prevConversations[currentChatId!] || []), errorMessage],
       }));
-       if (newSessionCreated && currentChatId) {
+      if (newSessionCreated && currentChatId) {
         setChatSessions(prev => prev.filter(s => s.id !== currentChatId));
         setAllConversations(prev => {
-            const copy = {...prev};
-            delete copy[currentChatId!];
-            return copy;
+          const copy = {...prev};
+          delete copy[currentChatId!];
+          return copy;
         });
         setActiveChatId(null); 
       }
     } finally {
       setIsLoadingAI(false);
     }
-  }, [activeChatId, toast, allConversations, chatSessions]);
+  }, [activeChatId, toast, allConversations, chatSessions, travelQueries]);
 
   const currentConversation = activeChatId ? allConversations[activeChatId] || [] : [];
 

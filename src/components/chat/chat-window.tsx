@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { Message } from '@/types/chat'; // Updated import path
@@ -43,6 +42,7 @@ export default function ChatWindow({ conversation, isLoadingAI }: ChatWindowProp
             message={msg.text}
             timestamp={new Date(msg.timestamp)} // Ensure timestamp is a Date object
             isLoading={msg.isLoading}
+            components={msg.components}
           />
         ))}
         {isLoadingAI && (
