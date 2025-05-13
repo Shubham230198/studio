@@ -59,7 +59,7 @@ export default function AppLayout({ sidebar, chatWindow, promptComposer, onNewCh
           <main className="flex-1 overflow-y-auto">
             {chatWindow}
           </main>
-          <div className="sticky bottom-0 bg-background border-t border-border p-4 z-10">
+          <div className="sticky bottom-0 bg-background border-t border-border p-4 z-10 mt-2">
             {promptComposer}
           </div>
         </div>
@@ -78,7 +78,7 @@ export default function AppLayout({ sidebar, chatWindow, promptComposer, onNewCh
         <main className="flex-1 overflow-y-auto">
           {chatWindow}
         </main>
-        <div className="sticky bottom-0 bg-background border-t border-border p-4 z-10">
+        <div className="sticky bottom-0 bg-background border-t border-border p-4 z-10 mt-2">
           {promptComposer}
         </div>
       </div>
