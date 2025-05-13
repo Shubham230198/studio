@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { Zap, Info, Settings, LogOut, UserCircle, HelpCircle } from 'lucide-react';
+import { Settings, LogOut, UserCircle, HelpCircle } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,25 +10,11 @@ import {
   DropdownMenuGroup
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function SidebarFooterComponent() {
   return (
     <div className="space-y-2">
-      <TooltipProvider delayDuration={100}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="outline" className="w-full justify-start text-primary border-primary/30 hover:bg-primary/10 hover:text-primary hover:border-primary/50 h-9 text-sm">
-              <Zap className="h-4 w-4 mr-2" />
-              Upgrade plan
-              <Info className="h-3.5 w-3.5 ml-auto text-muted-foreground" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="top" align="center" className="bg-popover text-popover-foreground">
-            <p className="text-xs">Unlock premium features and more!</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      {/* Upgrade plan button removed */}
       
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -69,7 +55,7 @@ export default function SidebarFooterComponent() {
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem disabled>
-            <span className="text-xs text-muted-foreground">PromptFlow v0.1.0</span>
+            <span className="text-xs text-muted-foreground">Flyin.AI v0.1.0</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

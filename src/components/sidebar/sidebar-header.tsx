@@ -12,7 +12,7 @@ export default function SidebarHeaderComponent() {
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-2">
         <Bot className="h-7 w-7 text-primary" />
-        <h1 className="text-xl font-semibold text-foreground">PromptFlow</h1>
+        <h1 className="text-xl font-semibold text-foreground">Flyin.AI</h1>
       </div>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>

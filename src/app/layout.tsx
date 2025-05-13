@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'PromptFlow', // Updated app name
-  description: 'A modern, responsive web application inspired by ChatGPT.', // Updated description
+  title: 'Flyin.AI', // Updated app name
+  description: 'A modern, responsive web application inspired by ChatGPT, focused on flights and travel.', // Updated description
 };
 
 export default function RootLayout({
