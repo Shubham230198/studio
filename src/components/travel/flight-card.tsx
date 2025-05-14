@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import type { FlightOption } from '@/types/travel';
 import { getAirlineIcon, getAirlineName } from '@/lib/airline-utils';
