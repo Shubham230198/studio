@@ -62,7 +62,7 @@ export interface FlightOption {
   price: number; // total price in default currency
   currency: string;
   airline: string;
-  flightNumber: string;
+  flightNumbers: string [];
   departTime: string; // ISO
   arriveTime: string; // ISO
   durationMinutes: number;

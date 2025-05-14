@@ -172,7 +172,7 @@ export const planItineraryFlow = ai.defineFlow(
           z.object({
             id: z.string(),
             airline: z.string(),
-            flightNumber: z.string(),
+            flightNumbers: z.array(z.string()),
             departTime: z.string(),
             arriveTime: z.string(),
             durationMinutes: z.number(),
@@ -196,7 +196,7 @@ export const planItineraryFlow = ai.defineFlow(
             z.object({
               id: z.string(),
               airline: z.string(),
-              flightNumber: z.string(),
+              flightNumbers: z.array(z.string()),
               departTime: z.string(),
               arriveTime: z.string(),
               durationMinutes: z.number(),
@@ -306,12 +306,14 @@ export const planItineraryFlow = ai.defineFlow(
         topFlights,
         validQuery.passengerCount
       );
+      console.log("reviewedFlights: ", reviewedFlights);
 
       // Format flights for UI display
       const formattedFlights = reviewedFlights.map((flight) => ({
         id: flight.id,
-        airline: flight.airline,
-        flightNumber: flight.flightNumber,
+        airline:
+          flight.flightNumbers?.map((fn) => fn.split("-")[0]).join(" → ") || "",
+        flightNumbers: flight.flightNumbers || [],
         departTime: new Date(flight.departTime).toISOString(),
         arriveTime: new Date(flight.arriveTime).toISOString(),
         durationMinutes: flight.durationMinutes,

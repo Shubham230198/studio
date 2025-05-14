@@ -58,14 +58,19 @@ export async function flightSearchFn(
     throw new Error("Flight API base URL not configured");
   }
 
+  // Validate required parameters
+  if (!query.originAirport || !query.destinationAirport) {
+    throw new Error("Origin and destination airports are required");
+  }
+
   const queryParams = new URLSearchParams({
-    from: query.originAirport || "",
-    to: query.destinationAirport || "",
+    from: query.originAirport,
+    to: query.destinationAirport,
     depart_date: query.departDate || "",
     adults: (query.passengerCount || 1).toString(),
   });
 
-  console.log('queryParams: ', queryParams.toString());
+  console.log("queryParams: ", queryParams.toString());
 
   const res = await fetch(
     `${
@@ -75,8 +80,9 @@ export async function flightSearchFn(
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        "accept": "application/json",
-        "referer": "https://www.cleartrip.ae/flights/international/results?adults=1&childs=0&infants=0&depart_date=13/05/2025&return_date=&intl=y&from=DXB&to=RUH&airline=&carrier=&sd=1747129807379&page=&sellingCountry=AE&ssfi=&flexi_search=&ssfc=&origin=DXB%20-%20Dubai,%20AE&destination=RUH%20-%20Riyadh,%20SA&class=Economy&sft="
+        accept: "application/json",
+        referer:
+          "https://www.cleartrip.ae/flights/international/results?adults=1&childs=0&infants=0&depart_date=13/05/2025&return_date=&intl=y&from=DXB&to=RUH&airline=&carrier=&sd=1747129807379&page=&sellingCountry=AE&ssfi=&flexi_search=&ssfc=&origin=DXB%20-%20Dubai,%20AE&destination=RUH%20-%20Riyadh,%20SA&class=Economy&sft=",
       },
     }
   );
@@ -88,17 +94,33 @@ export async function flightSearchFn(
   const data = await res.json();
 
   // Transform the API response to match our FlightOption interface
+  if (!data.cards?.length || !data.cards[0]?.length) {
+    return []; // Return empty array if no flights found
+  }
+
   return data.cards[0].map((card: any) => {
+    console.log("card: ", card);
     const firstFlight = card.sectorKeys[0].split("|")[0];
-    const [origin, dest, date, flight] = firstFlight.split("_");
-    const [airline, flightNumber] = flight.split("-");
+    const lastFlight =
+      card.sectorKeys[card.sectorKeys.length - 1].split("|").pop() || "";
+    const [origin, , , firstFlightInfo] = firstFlight.split("_");
+    const [, dest] = lastFlight.split("_");
+
+    // Extract all flight numbers from all sectors
+    const flightNumbers = card.sectorKeys.flatMap((sector: string) =>
+      sector.split("|").map((flight: string) => {
+        const [, , , flightInfo] = flight.split("_");
+        return flightInfo;
+      })
+    );
+
+    console.log("flightNumbers: ", flightNumbers);
 
     return {
       id: card.id,
       price: card.priceBreakup.pr,
       currency: "AED", // Assuming AED as default currency
-      airline: airline,
-      flightNumber: flightNumber,
+      flightNumbers: flightNumbers,
       departTime: card.firstDeparture.timestamp,
       arriveTime: card.lastArrival.timestamp,
       durationMinutes: card.totalDurationInMinutes,
@@ -108,7 +130,7 @@ export async function flightSearchFn(
       fareBasisCode: card.priceBreakup.fare.fb,
       originAirport: origin,
       destinationAirport: dest,
-      couponData: card.priceBreakup.fare?.coupon_detail || null
+      couponData: card.priceBreakup.fare?.coupon_detail || null,
     };
   });
 }
