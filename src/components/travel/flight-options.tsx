@@ -149,9 +149,7 @@ export function FlightOptions({
       }
     }
 
-    return `${
-      process.env.NEXT_PUBLIC_CLEARTRIP_BASE_URL
-    }/flights/international/results?${params.toString()}`;
+    return `${process.env.NEXT_PUBLIC_CLEARTRIP_BASE_URL}/flights/international/results?${params.toString()}`;
   };
 
   const handleSeeMoreFlights = () => {
