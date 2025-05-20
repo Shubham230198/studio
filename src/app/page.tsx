@@ -117,28 +117,39 @@ export default function HomePage() {
         const result = await planItineraryFlow({ 
           userMessage: promptText,
           previousQuery: travelQueries[currentChatId!],
-          chatContext: currentChatId ? allConversations[currentChatId].map(msg => ({
-            id: msg.id,
-            sender: msg.sender,
-            text: msg.text,
-            timestamp: String(msg.timestamp)
-          })) : undefined
+          chatContext: currentChatId && allConversations[currentChatId] ? 
+            allConversations[currentChatId].map(msg => ({
+              id: msg.id,
+              sender: msg.sender,
+              text: msg.text,
+              timestamp: String(msg.timestamp)
+            })) : 
+            undefined
         });
+
+        console.log('result --> ', JSON.stringify(result));
 
         // Update travel query state for this chat
         if ('flights' in result) {
-          setTravelQueries(prev => ({
-            ...prev,
-            [currentChatId!]: {
-              //TODO: Isko sahi karo yr
-              originAirport: result.flights[0]?.originAirport || null,
-              destinationAirport: result.flights[0]?.destinationAirport || null,
-              departDate: result.flights[0]?.departTime ? new Date(result.flights[0].departTime).toLocaleDateString('en-GB') : null,
-              returnDate: result.flights[1]?.departTime ? new Date(result.flights[1].departTime).toLocaleDateString('en-GB') : null,
-              passengerCount: 1, // Default to 1 passenger if not specified
-              isRoundTrip: result.flights.length > 1
-            }
-          }));
+          console.log('Previous travel queries:', travelQueries);
+          console.log('Updating travel query for chat:', currentChatId);
+          console.log('New flight data:', result.flights);
+          
+          setTravelQueries(prev => {
+            const newQueries = {
+              ...prev,
+              [currentChatId!]: {
+                originAirport: result.validQuery.originAirport  || '',
+                destinationAirport: result.validQuery.destinationAirport || '',
+                departDate: result.validQuery.departDate || '',
+                returnDate: result.validQuery.returnDate || undefined,
+                passengerCount: result.validQuery.passengerCount || 1,
+                isRoundTrip: result.validQuery.isRoundTrip || false
+              }
+            };
+            console.log('Updated travel queries:', newQueries);
+            return newQueries;
+          });
         }
 
         if ('ask' in result) {
@@ -155,14 +166,14 @@ export default function HomePage() {
           }));
         } else if ('flights' in result) {
           // Handle direct flights result
+          console.error('result --> ', JSON.stringify(result));
+          
           const aiMessage: Message = {
             id: crypto.randomUUID(),
             sender: 'ai',
             text: 'Here are your flight options:',
             timestamp: new Date(),
-            components: (
-              <FlightOptions flights={result.flights} />
-            ),
+            components: <FlightOptions flights={result.flights} searchQuery={result.validQuery} />
           };
           setAllConversations(prevConversations => ({
             ...prevConversations,
@@ -177,10 +188,10 @@ export default function HomePage() {
             timestamp: new Date(),
             components: (
               <div className="space-y-6">
-                <FlightOptions flights={result.plan.flights} />
+                <FlightOptions flights={result.plan.flights} searchQuery={travelQueries[currentChatId!] || {}} />
                 <ItinerarySummary plan={result.plan} />
               </div>
-            ),
+            )
           };
           setAllConversations(prevConversations => ({
             ...prevConversations,

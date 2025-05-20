@@ -166,6 +166,14 @@ export const planItineraryFlow = ai.defineFlow(
             couponData: z.any().optional(),
           })
         ),
+        validQuery: z.object({
+          originAirport: z.string(),
+          destinationAirport: z.string(),
+          departDate: z.string(),
+          passengerCount: z.number(),
+          returnDate: z.string().nullable().optional(),
+          isRoundTrip: z.boolean().optional(),
+        }),
       }), // flight results
       z.object({
         plan: z.object({
@@ -230,8 +238,7 @@ export const planItineraryFlow = ai.defineFlow(
       departDate: extraction.departDate ?? previousQuery?.departDate ?? null,
       passengerCount:
         extraction.passengerCount ?? previousQuery?.passengerCount ?? null,
-      returnDate:
-        extraction.returnDate ?? previousQuery?.returnDate ?? null,
+      returnDate: extraction.returnDate ?? previousQuery?.returnDate ?? null,
       isRoundTrip:
         extraction.isRoundTrip ?? previousQuery?.isRoundTrip ?? false,
     };
@@ -270,7 +277,10 @@ export const planItineraryFlow = ai.defineFlow(
       destinationAirport: merged.destinationAirport!,
       departDate: merged.departDate!,
       passengerCount: merged.passengerCount!,
-      returnDate: merged.isRoundTrip && merged.isRoundTrip == true ? merged.returnDate! : null,
+      returnDate:
+        merged.isRoundTrip && merged.isRoundTrip == true
+          ? merged.returnDate!
+          : null,
       isRoundTrip: merged.isRoundTrip!,
     };
     console.log("Valid query for flight search:", validQuery);
@@ -279,16 +289,72 @@ export const planItineraryFlow = ai.defineFlow(
       console.log("Step 6: Calling flight search API...");
       const allFlights = await flightSearchFn(validQuery);
 
-      // Get top 2 flights (sorted by price)
-      console.log("Step 7: Sorting and selecting top 2 flights...");
-      const topFlights = allFlights
-        .sort((a, b) => a.price - b.price)
-        .slice(0, 2);
+      // Get flights by different categories
+      console.log("Step 7: Categorizing and selecting flights...");
+
+      // Find cheapest flight
+      const cheapestFlight = [...allFlights].sort(
+        (a, b) => a.price - b.price
+      )[0];
+
+      // Find fastest flight
+      const fastestFlight = [...allFlights].sort(
+        (a, b) => a.durationMinutes - b.durationMinutes
+      )[0];
+
+      // Find non-stop cheapest flight
+      const nonStopFlights = allFlights.filter((flight) => flight.stops === 0);
+      const cheapestNonStopFlight =
+        nonStopFlights.length > 0
+          ? nonStopFlights.sort((a, b) => a.price - b.price)[0]
+          : null;
+
+      // Combine flights, removing duplicates and assigning multiple categories
+      const topFlights = new Map<string, FlightOption>();
+
+      // Add cheapest flight
+      if (cheapestFlight) {
+        cheapestFlight.categories = ["cheapest"];
+        topFlights.set(cheapestFlight.id, cheapestFlight);
+      }
+
+      // Add fastest flight
+      if (fastestFlight) {
+        if (topFlights.has(fastestFlight.id)) {
+          // If this flight is already in the list (e.g., it's also the cheapest)
+          const existingFlight = topFlights.get(fastestFlight.id)!;
+          existingFlight.categories = [
+            ...(existingFlight.categories || []),
+            "fastest",
+          ];
+        } else {
+          fastestFlight.categories = ["fastest"];
+          topFlights.set(fastestFlight.id, fastestFlight);
+        }
+      }
+
+      // Add cheapest non-stop flight
+      if (cheapestNonStopFlight) {
+        if (topFlights.has(cheapestNonStopFlight.id)) {
+          // If this flight is already in the list
+          const existingFlight = topFlights.get(cheapestNonStopFlight.id)!;
+          existingFlight.categories = [
+            ...(existingFlight.categories || []),
+            "non-stop",
+          ];
+        } else {
+          cheapestNonStopFlight.categories = ["non-stop"];
+          topFlights.set(cheapestNonStopFlight.id, cheapestNonStopFlight);
+        }
+      }
+
+      // Convert Map values to array
+      const selectedFlights = Array.from(topFlights.values());
 
       // Review selected flights
       console.log("Step 7a: Reviewing selected flights...");
       const reviewedFlights = await reviewSelectedFlights(
-        topFlights,
+        selectedFlights,
         validQuery.passengerCount
       );
       console.log("reviewedFlights: ", reviewedFlights);
@@ -314,6 +380,7 @@ export const planItineraryFlow = ai.defineFlow(
         itineraryId: flight.itineraryId,
         itineraryStatus: flight.itineraryStatus,
         reviewUrl: `https://www.cleartrip.ae/flights/itinerary/${flight.itineraryId}/info?ancillaryEnabled=true`,
+        categories: flight.categories || [],
       }));
 
       console.log(
@@ -322,6 +389,14 @@ export const planItineraryFlow = ai.defineFlow(
       );
       return {
         flights: formattedFlights,
+        validQuery: {
+          originAirport: validQuery.originAirport,
+          destinationAirport: validQuery.destinationAirport,
+          departDate: validQuery.departDate,
+          passengerCount: validQuery.passengerCount,
+          returnDate: validQuery.returnDate,
+          isRoundTrip: validQuery.isRoundTrip,
+        },
       };
     } catch (error) {
       console.error("Error in flight search:", error);

@@ -1,10 +1,14 @@
 export interface TravelQuery {
-  originAirport: string | null;
-  destinationAirport: string | null;
-  departDate: string | null; // DD/MM/YYYY
-  passengerCount: number | null;
-  returnDate: string | null; // DD/MM/YYYY
-  isRoundTrip: boolean | false;
+  originAirport: string;
+  destinationAirport: string;
+  departDate: string;
+  returnDate?: string | null;
+  passengerCount?: number;
+  originCity?: string;
+  originCountry?: string;
+  destinationCity?: string;
+  destinationCountry?: string;
+  isRoundTrip?: boolean;
 }
 
 export interface FlightOption {
@@ -25,6 +29,7 @@ export interface FlightOption {
   itineraryId?: string | null; // ID from flight review API
   itineraryStatus?: string; // Status from flight review API
   reviewUrl?: string; // URL to review the flight
+  categories?: Array<"cheapest" | "fastest" | "non-stop">; // Changed to array of categories
 }
 
 export interface ItineraryPlan {

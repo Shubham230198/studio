@@ -100,7 +100,6 @@ export async function flightSearchFn(
   }
 
   return data.cards[0].map((card: any) => {
-    console.log("card: ", card);
     const firstFlight = card.sectorKeys[0].split("|")[0];
     const lastFlight =
       card.sectorKeys[card.sectorKeys.length - 1].split("|").pop() || "";
@@ -114,8 +113,6 @@ export async function flightSearchFn(
         return flightInfo;
       })
     );
-
-    console.log("flightNumbers: ", flightNumbers);
 
     return {
       id: card.id,
