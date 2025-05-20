@@ -208,8 +208,8 @@ export default function HomePage() {
           //   timestamp: new Date(),
           //   components: (
           //     <div className="space-y-6">
-          //       <FlightOptions flights={result.plan.flights} searchQuery={travelQueries[currentChatId!] || {}} />
-          //       <ItinerarySummary plan={result.plan} />
+          //       <FlightOptions flights={result.plan.flights} searchQuery={travelQueries[currentChatId!] || {}} chatId={currentChatId!} />
+          //       <ItinerarySummary plan={result.plan} chatId={currentChatId!} />
           //     </div>
           //   )
           // };
