@@ -1,7 +1,5 @@
-
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Search, Edit3 } from 'lucide-react';
+import { Edit3 } from 'lucide-react';
 
 interface SidebarSearchActionsProps {
   onNewChatClick: () => void;
@@ -10,15 +8,6 @@ interface SidebarSearchActionsProps {
 export default function SidebarSearchActions({ onNewChatClick }: SidebarSearchActionsProps) {
   return (
     <div className="space-y-3">
-      <div className="relative">
-        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input 
-          type="search" 
-          placeholder="Search chats..." 
-          className="pl-8 w-full h-9 bg-input text-sm placeholder:text-muted-foreground rounded-md" 
-          aria-label="Search past chats"
-        />
-      </div>
       <Button 
         variant="outline" 
         className="w-full justify-start border-sidebar-border hover:bg-sidebar-accent hover:text-sidebar-accent-foreground h-9 text-sm"
