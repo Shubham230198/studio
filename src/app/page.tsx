@@ -143,7 +143,7 @@ export default function HomePage() {
                 departDate: result.validQuery.departDate || '',
                 returnDate: result.validQuery.returnDate || undefined,
                 passengerCount: result.validQuery.passengerCount || 1,
-                isRoundTrip: result.validQuery.isRoundTrip || false
+                isRoundTrip: result.validQuery.isRoundTrip || false,
               }
             };
             console.log('Updated travel queries:', newQueries);

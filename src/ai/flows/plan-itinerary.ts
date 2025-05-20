@@ -23,10 +23,12 @@ const slotExtractionPrompt = ai.definePrompt({
       isRoundTrip: z.boolean().nullable(),
       returnDate: z.string().nullable(),
       missingFields: z.array(z.string()),
-      filters: z.array(z.object({
-        type: z.string(),
-        value: z.string(),
-      })),
+      filters: z.array(
+        z.object({
+          type: z.string(),
+          value: z.string(),
+        })
+      ),
     }),
   },
   prompt: `Extract the following fields from the user message. If a field is not present, return null.
@@ -195,32 +197,14 @@ export const planItineraryFlow = ai.defineFlow(
           passengerCount: z.number(),
           returnDate: z.string().nullable().optional(),
           isRoundTrip: z.boolean().optional(),
-        }),
-      }), // flight results
-      z.object({
-        plan: z.object({
-          summary: z.string(),
-          dayByDay: z.array(z.string()),
-          flights: z.array(
+          filters: z.array(
             z.object({
-              id: z.string(),
-              airline: z.string(),
-              flightNumbers: z.array(z.string()),
-              departTime: z.string(),
-              arriveTime: z.string(),
-              durationMinutes: z.number(),
-              stops: z.number(),
-              price: z.number(),
-              currency: z.string(),
-              bookingUrl: z.string(),
-              fareKey: z.string(),
-              fareBasisCode: z.string(),
-              originAirport: z.string(),
-              destinationAirport: z.string(),
+              type: z.string(),
+              value: z.string(),
             })
           ),
         }),
-      }), // complete plan
+      }), // flight results
     ]),
   },
   async ({ userMessage, previousQuery, chatContext }) => {
@@ -420,6 +404,7 @@ export const planItineraryFlow = ai.defineFlow(
           passengerCount: validQuery.passengerCount,
           returnDate: validQuery.returnDate,
           isRoundTrip: validQuery.isRoundTrip,
+          filters: validQuery.filters,
         },
       };
     } catch (error) {
