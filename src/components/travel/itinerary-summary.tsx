@@ -7,9 +7,10 @@ import { Markdown } from "@/components/ui/markdown";
 
 interface ItinerarySummaryProps {
   plan: ItineraryPlan;
+  chatId: string;
 }
 
-export function ItinerarySummary({ plan }: ItinerarySummaryProps) {
+export function ItinerarySummary({ plan, chatId }: ItinerarySummaryProps) {
   return (
     <div className="space-y-6">
       <Card>
@@ -46,7 +47,7 @@ export function ItinerarySummary({ plan }: ItinerarySummaryProps) {
             destinationAirport: '',
             departDate: '',
             passengerCount: 1
-          }} />
+          }} chatId={chatId} />
         </CardContent>
       </Card>
     </div>
