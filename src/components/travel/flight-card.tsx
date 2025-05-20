@@ -28,7 +28,7 @@ function minutesToHrs(minutes: number): string {
 
 export function FlightCard({ flight }: FlightCardProps) {
   const handleCardClick = () => {
-    window.open(flight.bookingUrl, '_blank', 'noopener,noreferrer');
+    window.open(flight.reviewUrl, '_blank', 'noopener,noreferrer');
   };
 
   const formatTime = (timestamp: string) => {
@@ -160,8 +160,8 @@ export function FlightCard({ flight }: FlightCardProps) {
             className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-1 rounded-lg text-sm font-semibold shadow h-7 w-full sm:w-auto"
             onClick={(e) => {
               e.stopPropagation(); // Prevent card click event
-              if (flight.bookingUrl) {
-                window.open(flight.bookingUrl, '_blank', 'noopener,noreferrer');
+              if (flight.reviewUrl) {
+                window.open(flight.reviewUrl, '_blank', 'noopener,noreferrer');
               }
             }}
           >

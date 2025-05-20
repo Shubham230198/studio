@@ -81,54 +81,82 @@ export function FlightOptions({ flights, searchQuery }: FlightOptionsProps) {
   return (
     <div className="space-y-6 w-full max-w-full overflow-x-hidden">
       {/* Search Query & Filters Summary */}
-      <div className="bg-gray-900 text-white rounded-xl p-4 mb-2 shadow flex flex-col gap-2">
-        <div className="flex flex-wrap gap-4 items-center text-base font-medium">
-          <span>
-            <span className="text-gray-300">From:</span> {searchQuery.originAirport || '-'}
+      <div className="bg-[#23272f] border border-teal-500/20 rounded-2xl p-2 mb-3 shadow-xl flex flex-col gap-2">
+        {/* Top: Route */}
+        <div className="flex items-center justify-center gap-10">
+          <span className="px-3 py-1.5 rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-bold text-base shadow">{searchQuery.originAirport || '-'}</span>
+          <span className="flex items-center">
+            <span className="w-2 h-2 bg-teal-400 rounded-full"></span>
+            <span className="mx-1 w-12 border-t-2 border-dashed border-teal-400"></span>
+            <span className="w-2 h-2 bg-cyan-400 rounded-full"></span>
           </span>
-          <span>
-            <span className="text-gray-300">To:</span> {searchQuery.destinationAirport || '-'}
-          </span>
-          <span>
-            <span className="text-gray-300">Depart Date:</span> {searchQuery.departDate || '-'}
+          <span className="px-3 py-1.5 rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-bold text-base shadow">{searchQuery.destinationAirport || '-'}</span>
+        </div>
+        {/* Middle: Dates */}
+        <div className="flex flex-wrap justify-center gap-2 items-center">
+          <span className="flex items-center gap-1.5">
+            <svg className="h-4 w-4 text-cyan-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path d="M8 7V3m8 4V3M3 11h18M5 19h14a2 2 0 002-2v-7a2 2 0 00-2-2H5a2 2 0 00-2 2v7a2 2 0 002 2z"/>
+            </svg>
+            <span className="text-xs text-gray-400">Depart</span>
+            <span className="text-white font-semibold text-sm">{searchQuery.departDate || '-'}</span>
           </span>
           {searchQuery.returnDate && (
-            <span>
-              <span className="text-gray-300">Return Date:</span> {searchQuery.returnDate}
+            <span className="flex items-center gap-1.5">
+              <svg className="h-4 w-4 text-cyan-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path d="M8 7V3m8 4V3M3 11h18M5 19h14a2 2 0 002-2v-7a2 2 0 00-2-2H5a2 2 0 00-2 2v7a2 2 0 002 2z"/>
+              </svg>
+              <span className="text-xs text-gray-400">Return</span>
+              <span className="text-white font-semibold text-sm">{searchQuery.returnDate}</span>
             </span>
           )}
-          <span>
-            <span className="text-gray-300">Passengers:</span> {searchQuery.passengerCount || 1}
-          </span>
         </div>
-        {searchQuery.filters && searchQuery.filters.length > 0 && (
-          <div className="flex flex-wrap gap-2 items-center mt-1">
-            <span className="text-gray-300">Filters:</span>
-            {searchQuery.filters.map((filter, idx) => (
-              <span key={idx} className="bg-teal-600 text-xs px-2 py-1 rounded-full font-semibold">
-                {(() => {
-                  switch (filter.type) {
-                    case 'STOPS':
-                      return `${filter.value === '0' ? 'Direct' : filter.value + ' Stop' + (filter.value !== '1' ? 's' : '')}`;
-                    case 'AIRLINE':
-                      return `Airline: ${filter.value}`;
-                    case 'DEPARTURE_TIME':
-                      switch (filter.value) {
-                        case 'EARLY_MORNING': return 'Early Morning';
-                        case 'MORNING': return 'Morning';
-                        case 'AFTERNOON': return 'Afternoon';
-                        case 'EVENING': return 'Evening';
-                        case 'NIGHT': return 'Night';
-                        default: return filter.value;
-                      }
-                    default:
-                      return `${filter.type}: ${filter.value}`;
-                  }
-                })()}
+        {/* Bottom: Passengers & Filters */}
+        <div className="flex flex-wrap justify-between items-center gap-2">
+          <span className="flex items-center gap-1.5">
+            <svg className="h-4 w-4 text-cyan-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M9 20H4v-2a3 3 0 015.356-1.857M15 11a4 4 0 11-8 0 4 4 0 018 0z"/>
+            </svg>
+            <span className="text-xs text-gray-400">Passengers</span>
+            <span className="text-white font-semibold text-sm">{searchQuery.passengerCount || 1}</span>
+          </span>
+          {searchQuery.filters && searchQuery.filters.length > 0 && (
+            <div className="flex flex-wrap gap-1 items-center">
+              <span className="flex items-center gap-1 text-teal-400 font-semibold">
+                <span className="bg-teal-500/20 rounded-full p-0.5">
+                  <svg className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L15 13.414V19a1 1 0 01-1.447.894l-4-2A1 1 0 019 17v-3.586L3.293 6.707A1 1 0 013 6V4z"/></svg>
+                </span>
+                <span className="text-xs">Filters:</span>
               </span>
-            ))}
-          </div>
-        )}
+              {searchQuery.filters.map((filter, idx) => (
+                <span
+                  key={idx}
+                  className="bg-gradient-to-r from-teal-500 to-cyan-500/80 text-[10px] px-2 py-0.5 rounded-full font-semibold text-white shadow-md backdrop-blur-sm"
+                >
+                  {(() => {
+                    switch (filter.type) {
+                      case 'STOPS':
+                        return `${filter.value === '0' ? 'Direct' : filter.value + ' Stop' + (filter.value !== '1' ? 's' : '')}`;
+                      case 'AIRLINE':
+                        return `Airline: ${filter.value}`;
+                      case 'DEPARTURE_TIME':
+                        switch (filter.value) {
+                          case 'EARLY_MORNING': return 'Early Morning';
+                          case 'MORNING': return 'Morning';
+                          case 'AFTERNOON': return 'Afternoon';
+                          case 'EVENING': return 'Evening';
+                          case 'NIGHT': return 'Night';
+                          default: return filter.value;
+                        }
+                      default:
+                        return `${filter.type}: ${filter.value}`;
+                    }
+                  })()}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
       {/* End Search Query & Filters Summary */}
       <div className="space-y-4 w-full">
