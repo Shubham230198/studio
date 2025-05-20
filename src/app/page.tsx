@@ -20,7 +20,6 @@ import {
 import { planItineraryFlow } from '@/ai/flows/plan-itinerary';
 import type { TravelQuery } from '@/types/travel';
 import { FlightOptions } from '@/components/travel/flight-options';
-import { ItinerarySummary } from '@/components/travel/itinerary-summary';
 
 export default function HomePage() {
   const [allConversations, setAllConversations] = useState<Record<string, Message[]>>({});
@@ -180,23 +179,23 @@ export default function HomePage() {
             [currentChatId!]: [...(prevConversations[currentChatId!] || []), aiMessage],
           }));
         } else {
-          // Handle complete plan (legacy)
-          const aiMessage: Message = {
-            id: crypto.randomUUID(),
-            sender: 'ai',
-            text: result.plan.summary,
-            timestamp: new Date(),
-            components: (
-              <div className="space-y-6">
-                <FlightOptions flights={result.plan.flights} searchQuery={travelQueries[currentChatId!] || {}} />
-                <ItinerarySummary plan={result.plan} />
-              </div>
-            )
-          };
-          setAllConversations(prevConversations => ({
-            ...prevConversations,
-            [currentChatId!]: [...(prevConversations[currentChatId!] || []), aiMessage],
-          }));
+          // // Handle complete plan (legacy)
+          // const aiMessage: Message = {
+          //   id: crypto.randomUUID(),
+          //   sender: 'ai',
+          //   text: result.plan.summary,
+          //   timestamp: new Date(),
+          //   components: (
+          //     <div className="space-y-6">
+          //       <FlightOptions flights={result.plan.flights} searchQuery={travelQueries[currentChatId!] || {}} />
+          //       <ItinerarySummary plan={result.plan} />
+          //     </div>
+          //   )
+          // };
+          // setAllConversations(prevConversations => ({
+          //   ...prevConversations,
+          //   [currentChatId!]: [...(prevConversations[currentChatId!] || []), aiMessage],
+          // }));
         }
       } else {
         // Handle regular chat flow

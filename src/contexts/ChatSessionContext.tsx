@@ -53,10 +53,10 @@ export function ChatSessionProvider({ children }: ChatContextProviderProps) {
     const newId = uuidv4();
     const newSession: ChatSessionMemory = {
       id: newId,
-      originAirport: null,
-      destinationAirport: null,
-      departureDate: null,
-      passengerCount: null,
+      originAirport: undefined,
+      destinationAirport: undefined,
+      departureDate: undefined,
+      passengerCount: undefined,
       chatContext: [],
       messages: []
     };

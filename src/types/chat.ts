@@ -15,3 +15,13 @@ export interface ChatSession {
   timestamp: Date;
   // lastMessagePreview?: string; // Optional: for showing a snippet in the sidebar
 }
+
+export interface ChatSessionMemory {
+  id: string;
+  messages: Message[];
+  originAirport?: string;
+  destinationAirport?: string;
+  departureDate?: string;
+  passengerCount?: number;
+  chatContext?: string[];
+}

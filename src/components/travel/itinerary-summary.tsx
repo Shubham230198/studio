@@ -1,6 +1,6 @@
 'use client';
 
-import { ItineraryPlan } from "@/types/travel";
+import { ItineraryPlan, TravelQuery } from "@/types/travel";
 import { FlightOptions } from "./flight-options";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Markdown } from "@/components/ui/markdown";
@@ -41,7 +41,12 @@ export function ItinerarySummary({ plan }: ItinerarySummaryProps) {
           <h3 className="text-lg font-semibold">Flight Options</h3>
         </CardHeader>
         <CardContent>
-          <FlightOptions flights={plan.flights} />
+          <FlightOptions flights={plan.flights} searchQuery={{
+            originAirport: '',
+            destinationAirport: '',
+            departDate: '',
+            passengerCount: 1
+          }} />
         </CardContent>
       </Card>
     </div>
