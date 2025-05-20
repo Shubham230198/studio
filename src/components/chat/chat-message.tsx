@@ -55,7 +55,7 @@ export default function ChatMessage({
               </div>
             ) : (
               <>
-                {message}
+                <div>{message}</div>
                 {components && (
                   <div className="mt-4">
                     {components}

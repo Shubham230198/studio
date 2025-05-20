@@ -20,60 +20,39 @@ const slotExtractionPrompt = ai.definePrompt({
       destinationAirport: z.string().nullable(),
       departDate: z.string().nullable(),
       passengerCount: z.number().nullable(),
+      isRoundTrip: z.boolean().nullable(),
+      returnDate: z.string().nullable(),
       missingFields: z.array(z.string()),
     }),
   },
   prompt: `Extract the following fields from the user message. If a field is not present, return null.
-Fields: originAirport IATA code, destinationAirport IATA code, departDate (DD/MM/YYYY), passengerCount (adults).
+      Fields: originAirport IATA code, destinationAirport IATA code, departDate (DD/MM/YYYY), passengerCount (adults), returnDate (DD/MM/YYYY), isRoundTrip (boolean).
 
-Notes:
-- Today's date is ${new Date().toLocaleDateString("en-GB")}
-- If nohting is mentioned about the departure date, please use the today's date.
-- If passengerCount is not mentioned, please assume it to be 1
-- If user is missing something, please ask for it.
-- If user doesn't mention the complete date, please use the most matching upcoming date.
+      Instructions:
+      - Today's date is ${new Date().toLocaleDateString("en-GB")}
+      - Compulsory fields are originAirport, destinationAirport, departDate, passengerCount, isRoundTrip.
+      - If user doesn't mention the complete date, please use the most matching upcoming date, (e.g. if user says "next Friday", please use the date of next Friday)
 
-Rules:
-1. originAirport and destinationAirport must be valid IATA codes (3 letters)
-2. departDate must be in DD/MM/YYYY format
-4. List any missing or invalid fields in missingFields array
-5. If the user mentions a city or country, use the IATA code for the nearest airport.
-6. If user doesn't mention a Year, please use the current year.
+      Rules:
+      1. originAirport and destinationAirport must be valid IATA codes (3 letters)
+      2. departDate and returnDate must be in DD/MM/YYYY format
+      3. Minimum default passengerCount is 1.
+      4. List any missing or invalid fields in missingFields array
+      5. If the user mentions a city or country, use the IATA code for the nearest airport.
+      6. If user doesn't mention anything about isRoundTrip, please assume it to be false.
+      7. If user doesn't mention anything about returnDate, please assume it to be null.
 
+      Examples:
+      - "I want to fly from DEL to BOM on 25/12/2024 with 2 people" -> {originAirport: "DEL", destinationAirport: "BOM", departDate: "25/12/2024", passengerCount: 2, missingFields: [], returnDate: null, isRoundTrip: false}
+      - "Looking for flights to London" -> {originAirport: null, destinationAirport: "LHR", departDate: null, passengerCount: null, missingFields: ["originAirport", "departDate", "passengerCount"], returnDate: null, isRoundTrip: false}
+      - "Flight from Mumbai to Delhi" -> {originAirport: "BOM", destinationAirport: "DEL", departDate: null, passengerCount: null, missingFields: ["departDate", "passengerCount"], returnDate: null, isRoundTrip: false}
+      - "I want to fly from DEL to DXB on 25/12 and return on 27/12" -> {originAirport: "DEL", destinationAirport: "DXB", departDate: "25/12/2025", passengerCount: 1, missingFields: [], returnDate: "27/12/2025", isRoundTrip: true}
+      - "Help me choose a flight to fly from Delhi to Bangalore next Friday" -> {originAirport: "DEL", destinationAirport: "BLR", departDate: "23/05/2025", passengerCount: null, missingFields: ["passengerCount"], returnDate: null, isRoundTrip: false}
+      - "Flight from Mumbai to Dubai from 02/11 to 04/11" -> {originAirport: "BOM", destinationAirport: "DXB", departDate: "02/11/2025", passengerCount: 0, missingFields: ["passengerCount"], returnDate: "04/11/2025", isRoundTrip: true}
 
-Examples:
-- "I want to fly from DEL to BOM on 25/12/2024 with 2 people" -> {originAirport: "DEL", destinationAirport: "BOM", departDate: "25/12/2024", passengerCount: 2, missingFields: []}
-- "Looking for flights to London" -> {originAirport: null, destinationAirport: "LHR", departDate: null, passengerCount: null, missingFields: ["originAirport", "departDate", "passengerCount"]}
-- "Flight from Mumbai to Delhi" -> {originAirport: "BOM", destinationAirport: "DEL", departDate: null, passengerCount: null, missingFields: ["departDate", "passengerCount"]}
-- "I want to fly from DEL to BOM on 25/12" -> {originAirport: "DEL", destinationAirport: "BOM", departDate: "25/12/2025", passengerCount: null, missingFields: ["passengerCount"]}
-- "Help me choose a flight to fly from Delhi to Bangalore next Friday" -> {originAirport: "DEL", destinationAirport: "BLR", departDate: "23/05/2025", passengerCount: 1, missingFields: ["passengerCount"]}
+      User: {{{userMessage}}}
 
-User: {{{userMessage}}}
-
-Chat context: {{{chatContext}}}`,
-});
-
-const flightSummaryPrompt = ai.definePrompt({
-  name: "flightSummaryPrompt",
-  input: {
-    schema: z.object({
-      flights: z.array(z.any()),
-    }),
-  },
-  output: {
-    schema: z.object({
-      summary: z.string(),
-    }),
-  },
-  prompt: `Create a concise summary of the top 2 flights. For each flight, include:
-1. Airline and flight number
-2. Departure and arrival times
-3. Duration and number of stops
-4. Price in AED
-
-Format the response in a clear, easy-to-read way.
-
-Available flights: {{{flights}}}`,
+      Chat context: {{{chatContext}}}`,
 });
 
 interface ReviewedFlight extends FlightOption {
@@ -157,7 +136,7 @@ export const planItineraryFlow = ai.defineFlow(
             id: z.string(),
             sender: z.string(),
             text: z.string(),
-            timestamp: z.date(),
+            timestamp: z.string(),
           })
         )
         .optional(),
@@ -251,6 +230,10 @@ export const planItineraryFlow = ai.defineFlow(
       departDate: extraction.departDate ?? previousQuery?.departDate ?? null,
       passengerCount:
         extraction.passengerCount ?? previousQuery?.passengerCount ?? null,
+      returnDate:
+        extraction.returnDate ?? previousQuery?.returnDate ?? null,
+      isRoundTrip:
+        extraction.isRoundTrip ?? previousQuery?.isRoundTrip ?? false,
     };
     console.log("Merged query data:", merged);
 
@@ -287,6 +270,8 @@ export const planItineraryFlow = ai.defineFlow(
       destinationAirport: merged.destinationAirport!,
       departDate: merged.departDate!,
       passengerCount: merged.passengerCount!,
+      returnDate: merged.isRoundTrip && merged.isRoundTrip == true ? merged.returnDate! : null,
+      isRoundTrip: merged.isRoundTrip!,
     };
     console.log("Valid query for flight search:", validQuery);
 

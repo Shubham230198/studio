@@ -3,6 +3,8 @@ export interface TravelQuery {
   destinationAirport: string | null;
   departDate: string | null; // DD/MM/YYYY
   passengerCount: number | null;
+  returnDate: string | null; // DD/MM/YYYY
+  isRoundTrip: boolean | false;
 }
 
 export interface FlightOption {

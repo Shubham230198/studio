@@ -110,13 +110,19 @@ export default function HomePage() {
       // Check if this is a travel-related query
       const isTravelQuery = promptText.toLowerCase().includes('flight') || 
                            promptText.toLowerCase().includes('travel') ||
+                           promptText.toLowerCase().includes('itinerary') ||
                            promptText.toLowerCase().includes('trip');
 
       if (isTravelQuery) {
         const result = await planItineraryFlow({ 
           userMessage: promptText,
           previousQuery: travelQueries[currentChatId!],
-          chatContext: currentChatId ? allConversations[currentChatId] : undefined
+          chatContext: currentChatId ? allConversations[currentChatId].map(msg => ({
+            id: msg.id,
+            sender: msg.sender,
+            text: msg.text,
+            timestamp: String(msg.timestamp)
+          })) : undefined
         });
 
         // Update travel query state for this chat
@@ -124,10 +130,13 @@ export default function HomePage() {
           setTravelQueries(prev => ({
             ...prev,
             [currentChatId!]: {
+              //TODO: Isko sahi karo yr
               originAirport: result.flights[0]?.originAirport || null,
               destinationAirport: result.flights[0]?.destinationAirport || null,
-              departDate: null, // You might want to extract this from the flights data
-              passengerCount: null, // You might want to extract this from the flights data
+              departDate: result.flights[0]?.departTime ? new Date(result.flights[0].departTime).toLocaleDateString('en-GB') : null,
+              returnDate: result.flights[1]?.departTime ? new Date(result.flights[1].departTime).toLocaleDateString('en-GB') : null,
+              passengerCount: 1, // Default to 1 passenger if not specified
+              isRoundTrip: result.flights.length > 1
             }
           }));
         }

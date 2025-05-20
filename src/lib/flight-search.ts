@@ -66,7 +66,8 @@ export async function flightSearchFn(
   const queryParams = new URLSearchParams({
     from: query.originAirport,
     to: query.destinationAirport,
-    depart_date: query.departDate || "",
+    depart_date: query.departDate || new Date().toLocaleDateString("en-GB"),
+    return_date: query.returnDate || "",
     adults: (query.passengerCount || 1).toString(),
   });
 
