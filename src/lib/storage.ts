@@ -1,9 +1,8 @@
+import type { ChatSession, Message } from "@/types/chat";
 
-import type { ChatSession, Message } from '@/types/chat';
-
-const CHAT_SESSIONS_KEY = 'chatSessions';
-const CONVERSATIONS_KEY = 'chatConversations';
-const ACTIVE_CHAT_ID_KEY = 'activeChatId';
+const CHAT_SESSIONS_KEY = "chatSessions";
+const CONVERSATIONS_KEY = "chatConversations";
+const ACTIVE_CHAT_ID_KEY = "activeChatId";
 
 // Helper to safely parse JSON from localStorage
 function safeJsonParse<T>(key: string, defaultValue: T): T {
@@ -13,15 +12,19 @@ function safeJsonParse<T>(key: string, defaultValue: T): T {
       const parsed = JSON.parse(item);
       // Revive dates if necessary (example for ChatSession and Message)
       if (key === CHAT_SESSIONS_KEY && Array.isArray(parsed)) {
-        return parsed.map(session => ({
+        return parsed.map((session) => ({
           ...session,
           timestamp: new Date(session.timestamp),
         })) as T;
       }
-      if (key === CONVERSATIONS_KEY && typeof parsed === 'object' && parsed !== null) {
+      if (
+        key === CONVERSATIONS_KEY &&
+        typeof parsed === "object" &&
+        parsed !== null
+      ) {
         const conversations = parsed as Record<string, Message[]>;
-        Object.keys(conversations).forEach(chatId => {
-          conversations[chatId] = conversations[chatId].map(message => ({
+        Object.keys(conversations).forEach((chatId) => {
+          conversations[chatId] = conversations[chatId].map((message) => ({
             ...message,
             timestamp: new Date(message.timestamp),
           }));
@@ -37,7 +40,6 @@ function safeJsonParse<T>(key: string, defaultValue: T): T {
   return defaultValue;
 }
 
-
 // Chat Sessions
 export function saveChatSessions(sessions: ChatSession[]): void {
   try {
@@ -52,7 +54,9 @@ export function loadChatSessions(): ChatSession[] {
 }
 
 // Conversations
-export function saveConversations(conversations: Record<string, Message[]>): void {
+export function saveConversations(
+  conversations: Record<string, Message[]>
+): void {
   try {
     localStorage.setItem(CONVERSATIONS_KEY, JSON.stringify(conversations));
   } catch (error) {
@@ -61,7 +65,7 @@ export function saveConversations(conversations: Record<string, Message[]>): voi
 }
 
 export function loadConversations(): Record<string, Message[]> {
-   return safeJsonParse<Record<string, Message[]>>(CONVERSATIONS_KEY, {});
+  return safeJsonParse<Record<string, Message[]>>(CONVERSATIONS_KEY, {});
 }
 
 // Active Chat ID
@@ -83,5 +87,63 @@ export function loadActiveChatId(): string | null {
   } catch (error) {
     console.error("Error loading active chat ID from localStorage:", error);
     return null;
+  }
+}
+
+export function saveFlightData(
+  chatId: string,
+  flights: any[],
+  searchQuery: any
+) {
+  try {
+    const sessions = loadChatSessions();
+    const sessionIndex = sessions.findIndex((session) => session.id === chatId);
+
+    if (sessionIndex !== -1) {
+      sessions[sessionIndex].flightData = {
+        flights,
+        searchQuery,
+        timestamp: new Date(),
+      };
+      saveChatSessions(sessions);
+    }
+  } catch (error) {
+    console.error("Error saving flight data to chat session:", error);
+  }
+}
+
+export function loadFlightData(chatId: string) {
+  try {
+    const sessions = loadChatSessions();
+    const session = sessions.find((session) => session.id === chatId);
+
+    if (session?.flightData) {
+      // Check if the data is less than 1 hour old
+      const timestamp = new Date(session.flightData.timestamp);
+      const now = new Date();
+      const hoursDiff =
+        (now.getTime() - timestamp.getTime()) / (1000 * 60 * 60);
+
+      if (hoursDiff < 1) {
+        return session.flightData;
+      }
+    }
+  } catch (error) {
+    console.error("Error loading flight data from chat session:", error);
+  }
+  return null;
+}
+
+export function clearFlightData(chatId: string) {
+  try {
+    const sessions = loadChatSessions();
+    const sessionIndex = sessions.findIndex((session) => session.id === chatId);
+
+    if (sessionIndex !== -1) {
+      delete sessions[sessionIndex].flightData;
+      saveChatSessions(sessions);
+    }
+  } catch (error) {
+    console.error("Error clearing flight data from chat session:", error);
   }
 }

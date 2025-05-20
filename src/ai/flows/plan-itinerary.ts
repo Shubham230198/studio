@@ -378,7 +378,7 @@ export const planItineraryFlow = ai.defineFlow(
         durationMinutes: flight.durationMinutes,
         stops: flight.stops,
         price: flight.price,
-        currency: "AED",
+        currency: "OMR",
         bookingUrl: flight.bookingUrl,
         fareKey: flight.fareKey,
         fareBasisCode: flight.fareBasisCode,

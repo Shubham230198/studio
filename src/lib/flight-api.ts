@@ -58,7 +58,7 @@ export async function reviewFlight(
           accept: "application/json",
           "dc-flow": "ENABLED",
           "Content-Type": "application/json",
-          "referer": "https://www.cleartrip.ae/flights/international/results?adults=1&childs=0&infants=0&depart_date=14/05/2025&return_date=&intl=y&from=DXB&to=DEL&airline=&carrier=&sd=1747164224661&page=&sellingCountry=AE&ssfi=&flexi_search=&ssfc=&origin=DXB%20-%20Dubai,%20AE&destination=DEL%20-%20New%20Delhi,%20IN&class=Economy&sft="
+          "referer": "https://www.cleartrip.om/flights/international/results?adults=1&childs=0&infants=0&depart_date=14/05/2025&return_date=&intl=y&from=DXB&to=DEL&airline=&carrier=&sd=1747164224661&page=&sellingCountry=AE&ssfi=&flexi_search=&ssfc=&origin=DXB%20-%20Dubai,%20AE&destination=DEL%20-%20New%20Delhi,%20IN&class=Economy&sft="
         },
       }
     );

@@ -6,17 +6,42 @@ import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { Progress } from "@/components/ui/progress";
 import { X } from "lucide-react";
+import { saveFlightData, loadFlightData } from "@/lib/storage";
+import { useParams } from "next/navigation";
 
 interface FlightOptionsProps {
   flights: FlightOption[];
   searchQuery: TravelQuery;
 }
 
-export function FlightOptions({ flights, searchQuery }: FlightOptionsProps) {
+export function FlightOptions({ flights: initialFlights, searchQuery: initialSearchQuery }: FlightOptionsProps) {
+  const params = useParams();
+  const chatId = params?.chatId as string;
+  
+  const [flights, setFlights] = useState<FlightOption[]>(initialFlights);
+  const [searchQuery, setSearchQuery] = useState<TravelQuery>(initialSearchQuery);
   const [countdown, setCountdown] = useState(15);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [isCancelled, setIsCancelled] = useState(false);
   const [progress, setProgress] = useState(0);
+
+  // Load saved flight data on component mount
+  useEffect(() => {
+    if (chatId) {
+      const savedData = loadFlightData(chatId);
+      if (savedData) {
+        setFlights(savedData.flights);
+        setSearchQuery(savedData.searchQuery);
+      }
+    }
+  }, [chatId]);
+
+  // Save flight data whenever it changes
+  useEffect(() => {
+    if (chatId && flights.length > 0) {
+      saveFlightData(chatId, flights, searchQuery);
+    }
+  }, [chatId, flights, searchQuery]);
 
   useEffect(() => {
     if (countdown > 0 && !isCancelled) {

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { FlightOption, TravelQuery } from "./travel";
 
 export interface Message {
   id: string;
@@ -13,6 +14,11 @@ export interface ChatSession {
   id: string;
   title: string;
   timestamp: Date;
+  flightData?: {
+    flights: FlightOption[];
+    searchQuery: TravelQuery;
+    timestamp: Date;
+  };
   // lastMessagePreview?: string; // Optional: for showing a snippet in the sidebar
 }
 

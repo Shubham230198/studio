@@ -1,56 +1,5 @@
 import type { FlightOption, TravelQuery } from "@/types/travel";
 
-interface SearchAPIResponse {
-  cards: Array<
-    Array<{
-      id: string;
-      sectorKeys: string[];
-      airlineCodes: string[];
-      priceBreakup: {
-        pr: number;
-        fare: {
-          fk: string;
-          fb: string;
-        };
-      };
-      firstDeparture: {
-        time: string;
-        date: string;
-        timestamp: number;
-      };
-      lastArrival: {
-        time: string;
-        date: string;
-        timestamp: number;
-      };
-      totalDurationInMinutes: number;
-      maxStopsInSectors: number;
-    }>
-  >;
-  sectors: Record<
-    string,
-    {
-      stops: number;
-      flights: {
-        segments: Array<{
-          flightNumber: string;
-          airlineCodes: string[];
-          departure: {
-            airportCode: string;
-            time: string;
-            date: string;
-          };
-          arrival: {
-            airportCode: string;
-            time: string;
-            date: string;
-          };
-        }>;
-      };
-    }
-  >;
-}
-
 // Filter functions
 function filterByStops(flight: FlightOption, maxStops: number): boolean {
   return flight.stops <= maxStops;
@@ -68,19 +17,26 @@ function filterByDepartureTime(
   timeSlot: string
 ): boolean {
   const departureDate = new Date(flight.departTime);
-  const hours = departureDate.getHours();
+  const istHour = parseInt(
+    departureDate.toLocaleString('en-IN', {
+      hour: '2-digit',
+      hour12: false,
+      timeZone: 'Asia/Kolkata'
+    }),
+    10
+  );
 
   switch (timeSlot) {
     case "EARLY_MORNING":
-      return hours >= 0 && hours < 8;
+      return istHour >= 0 && istHour < 8;
     case "MORNING":
-      return hours >= 8 && hours < 12;
+      return istHour >= 8 && istHour < 12;
     case "AFTERNOON":
-      return hours >= 12 && hours < 16;
+      return istHour >= 12 && istHour < 16;
     case "EVENING":
-      return hours >= 16 && hours < 20;
+      return istHour >= 16 && istHour < 20;
     case "NIGHT":
-      return hours >= 20 || hours < 0;
+      return istHour >= 20 || istHour < 0;
     default:
       return true;
   }
