@@ -169,7 +169,7 @@ export default function HomePage() {
           const aiMessage: Message = {
             id: crypto.randomUUID(),
             sender: 'ai',
-            text: 'Here are your flight options:',
+            text: 'Here are best selected flight options for you:',
             timestamp: new Date(),
             components: <FlightOptions flights={result.flights} searchQuery={result.validQuery} />
           };

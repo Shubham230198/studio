@@ -29,6 +29,11 @@ export default function ChatMessage({
   const validTimestamp = timestamp instanceof Date ? timestamp : new Date(timestamp);
   const formattedTimestamp = formatDistanceToNow(validTimestamp, { addSuffix: true });
 
+  // Validate components
+  const isValidComponent = components && 
+    typeof components === 'object' && 
+    'type' in components && 
+    'props' in components;
 
   return (
     <div className={cn('flex items-start gap-3', isUser ? 'justify-end' : 'justify-start')}>
@@ -56,7 +61,7 @@ export default function ChatMessage({
             ) : (
               <>
                 {message && <div>{message}</div>}
-                {components && (
+                {isValidComponent && (
                   <div className="mt-4">
                     {components}
                   </div>

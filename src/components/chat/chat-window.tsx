@@ -36,8 +36,11 @@ export default function ChatWindow({ conversation, isLoadingAI }: ChatWindowProp
     <ScrollArea className="h-full flex-grow" ref={scrollAreaRef}>
       <div className="flex flex-col space-y-4 p-4 md:p-8"> {/* Added padding here */}
         {conversation.map((msg) => {
-          // Ensure components is a valid React node
-          const components = msg.components && typeof msg.components === 'object' ? msg.components : null;
+          // More strict validation for components
+          const isValidComponent = msg.components && 
+            typeof msg.components === 'object' && 
+            'type' in msg.components && 
+            'props' in msg.components;
           
           return (
             <ChatMessage
@@ -46,7 +49,7 @@ export default function ChatWindow({ conversation, isLoadingAI }: ChatWindowProp
               message={msg.text}
               timestamp={new Date(msg.timestamp)} // Ensure timestamp is a Date object
               isLoading={msg.isLoading}
-              components={components}
+              components={isValidComponent ? msg.components : null}
             />
           );
         })}

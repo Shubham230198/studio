@@ -9,6 +9,10 @@ export interface TravelQuery {
   destinationCity?: string;
   destinationCountry?: string;
   isRoundTrip?: boolean;
+  filters?: Array<{
+    type: string;
+    value: string;
+  }>;
 }
 
 export interface FlightOption {

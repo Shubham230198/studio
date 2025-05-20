@@ -51,6 +51,41 @@ interface SearchAPIResponse {
   >;
 }
 
+// Filter functions
+function filterByStops(flight: FlightOption, maxStops: number): boolean {
+  return flight.stops <= maxStops;
+}
+
+function filterByAirline(flight: FlightOption, airlines: string[]): boolean {
+  // Extract airline codes from flight numbers (e.g., "EY-5427" -> "EY")
+  const flightAirlines = flight.flightNumbers.map((fn) => fn.split("-")[0]);
+  // Check if any of the flight's airlines are in the allowed airlines list
+  return flightAirlines.some((airline) => airlines.includes(airline));
+}
+
+function filterByDepartureTime(
+  flight: FlightOption,
+  timeSlot: string
+): boolean {
+  const departureDate = new Date(flight.departTime);
+  const hours = departureDate.getHours();
+
+  switch (timeSlot) {
+    case "EARLY_MORNING":
+      return hours >= 0 && hours < 8;
+    case "MORNING":
+      return hours >= 8 && hours < 12;
+    case "AFTERNOON":
+      return hours >= 12 && hours < 16;
+    case "EVENING":
+      return hours >= 16 && hours < 20;
+    case "NIGHT":
+      return hours >= 20 || hours < 0;
+    default:
+      return true;
+  }
+}
+
 export async function flightSearchFn(
   query: TravelQuery
 ): Promise<FlightOption[]> {
@@ -99,7 +134,7 @@ export async function flightSearchFn(
     return []; // Return empty array if no flights found
   }
 
-  return data.cards[0].map((card: any) => {
+  let flights = data.cards[0].map((card: any) => {
     const firstFlight = card.sectorKeys[0].split("|")[0];
     const lastFlight =
       card.sectorKeys[card.sectorKeys.length - 1].split("|").pop() || "";
@@ -117,7 +152,7 @@ export async function flightSearchFn(
     return {
       id: card.id,
       price: card.priceBreakup.pr,
-      currency: "AED", // Assuming AED as default currency
+      currency: "OMR", // Assuming OMR as default currency
       flightNumbers: flightNumbers,
       departTime: card.firstDeparture.timestamp,
       arriveTime: card.lastArrival.timestamp,
@@ -131,4 +166,31 @@ export async function flightSearchFn(
       couponData: card.priceBreakup.fare?.coupon_detail || null,
     };
   });
+
+  // Apply filters if they exist in the query
+  if (query.filters) {
+    query.filters.forEach((filter) => {
+      switch (filter.type) {
+        case "STOPS":
+          const maxStops = parseInt(filter.value);
+          flights = flights.filter((flight: FlightOption) =>
+            filterByStops(flight, maxStops)
+          );
+          break;
+        case "AIRLINE":
+          const airlines = filter.value.split(",").map((code) => code.trim());
+          flights = flights.filter((flight: FlightOption) =>
+            filterByAirline(flight, airlines)
+          );
+          break;
+        case "DEPARTURE_TIME":
+          flights = flights.filter((flight: FlightOption) =>
+            filterByDepartureTime(flight, filter.value)
+          );
+          break;
+      }
+    });
+  }
+
+  return flights;
 }

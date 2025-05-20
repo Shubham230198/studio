@@ -155,7 +155,7 @@ export function FlightCard({ flight }: FlightCardProps) {
 
         {/* Price and Book button */}
         <div className="flex flex-col items-end min-w-[130px] w-full sm:w-auto gap-1">
-          <span className="text-lg font-bold text-gray-900">AED {flight.price}</span>
+          <span className="text-lg font-bold text-gray-900">OMR {flight.price}</span>
           <Button 
             className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-1 rounded-lg text-sm font-semibold shadow h-7 w-full sm:w-auto"
             onClick={(e) => {

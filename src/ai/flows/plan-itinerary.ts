@@ -23,10 +23,30 @@ const slotExtractionPrompt = ai.definePrompt({
       isRoundTrip: z.boolean().nullable(),
       returnDate: z.string().nullable(),
       missingFields: z.array(z.string()),
+      filters: z.array(z.object({
+        type: z.string(),
+        value: z.string(),
+      })),
     }),
   },
   prompt: `Extract the following fields from the user message. If a field is not present, return null.
-      Fields: originAirport IATA code, destinationAirport IATA code, departDate (DD/MM/YYYY), passengerCount (adults), returnDate (DD/MM/YYYY), isRoundTrip (boolean).
+      Fields: 
+        - originAirport IATA code, 
+        - destinationAirport IATA code, 
+        - departDate (DD/MM/YYYY), 
+        - passengerCount (adults), 
+        - isRoundTrip (boolean), 
+        - returnDate (DD/MM/YYYY), 
+        - filter: List of filters to apply to the flight search
+          - STOPS:0/1/2
+          - AIRLINE: 6E/SG/AI/XY etc (comma separated, if multiple airlines are mentioned)
+          - DEPARTURE_TIME: 
+            - EARLY_MORNING (for flights departing between Midnight to 8 am)
+            - MORNING (for flights departing between 8 am to Noon)
+            - AFTERNOON (for flights departing between Noon to 4 pm)
+            - EVENING (for flights departing between 4 pm to 8 pm)
+            - NIGHT (for flights departing between 8 pm to Midnight)
+
 
       Instructions:
       - Today's date is ${new Date().toLocaleDateString("en-GB")}
@@ -44,6 +64,7 @@ const slotExtractionPrompt = ai.definePrompt({
       8. If user doesn't mention anything about returnDate, please assume it to be null.
 
       Examples:
+      - "I want fastest flight from DEL to BOM" -> {originAirport: "DEL", destinationAirport: "BOM", departDate: null, passengerCount: null, missingFields: ["departDate", "passengerCount"], returnDate: null, isRoundTrip: false, filter: "fastest"}
       - "I want to fly from DEL to BOM on 25/12/2024 with 2 people" -> {originAirport: "DEL", destinationAirport: "BOM", departDate: "25/12/2024", passengerCount: 2, missingFields: [], returnDate: null, isRoundTrip: false}
       - "Looking for flights to London" -> {originAirport: null, destinationAirport: "LHR", departDate: null, passengerCount: null, missingFields: ["originAirport", "departDate", "passengerCount"], returnDate: null, isRoundTrip: false}
       - "Flight from Mumbai to Delhi" -> {originAirport: "BOM", destinationAirport: "DEL", departDate: null, passengerCount: null, missingFields: ["departDate", "passengerCount"], returnDate: null, isRoundTrip: false}
@@ -90,12 +111,12 @@ async function reviewSelectedFlights(
             },
           ],
           itineraryMeta: {
-            domain: "AE",
+            domain: "OM",
             externalApi: false,
             international: true,
             sid: `DC_Search-${Date.now()}`,
             sourceType: "B2C",
-            utmCurrency: "AED",
+            utmCurrency: "OMR",
             convFeeRequired: false,
             couponCode: "",
             sft: "",
@@ -242,6 +263,7 @@ export const planItineraryFlow = ai.defineFlow(
       returnDate: extraction.returnDate ?? previousQuery?.returnDate ?? null,
       isRoundTrip:
         extraction.isRoundTrip ?? previousQuery?.isRoundTrip ?? false,
+      filters: extraction.filters ?? previousQuery?.filters ?? [],
     };
     console.log("Merged query data:", merged);
 
@@ -283,6 +305,7 @@ export const planItineraryFlow = ai.defineFlow(
           ? merged.returnDate!
           : null,
       isRoundTrip: merged.isRoundTrip!,
+      filters: merged.filters! || [],
     };
     console.log("Valid query for flight search:", validQuery);
 
