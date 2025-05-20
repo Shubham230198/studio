@@ -317,7 +317,7 @@ export function FlightOptions({ flights, searchQuery }: FlightOptionsProps) {
       params.append("return_date", formatDateForUrl(searchQuery.returnDate));
     }
 
-    return `https://www.cleartrip.ae/flights/international/results?${params.toString()}`;
+    return `${process.env.CLEARTRIP_BASE_URL}/flights/international/results?${params.toString()}`;
   };
 
   const handleSeeMoreFlights = () => {

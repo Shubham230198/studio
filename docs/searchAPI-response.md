@@ -144,14 +144,14 @@
         },
         "promos": [
           {
-            "plink": "https://www.cleartrip.ae/offers/uae/summer",
+            "plink": `${process.env.CLEARTRIP_BASE_URL}/offers/uae/summer`,
             "ptype": "CASHBACK",
             "ptext": "Enjoy up to AED 500 off, use code SUMMER"
           }
         ],
         "fareOfferList": [
           {
-            "plink": "https://www.cleartrip.ae/offers/uae/summer",
+            "plink": `${process.env.CLEARTRIP_BASE_URL}/offers/uae/summer`,
             "ptype": "CASHBACK",
             "ptext": "Enjoy up to AED 500 off, use code SUMMER"
           }
@@ -323,14 +323,14 @@
         },
         "promos": [
           {
-            "plink": "https://www.cleartrip.ae/offers/uae/summer",
+            "plink": `${process.env.CLEARTRIP_BASE_URL}/offers/uae/summer`,
             "ptype": "CASHBACK",
             "ptext": "Enjoy up to AED 500 off, use code SUMMER"
           }
         ],
         "fareOfferList": [
           {
-            "plink": "https://www.cleartrip.ae/offers/uae/summer",
+            "plink": `${process.env.CLEARTRIP_BASE_URL}/offers/uae/summer`,
             "ptype": "CASHBACK",
             "ptext": "Enjoy up to AED 500 off, use code SUMMER"
           }
@@ -502,14 +502,14 @@
         },
         "promos": [
           {
-            "plink": "https://www.cleartrip.ae/offers/uae/summer",
+            "plink": `${process.env.CLEARTRIP_BASE_URL}/offers/uae/summer`,
             "ptype": "CASHBACK",
             "ptext": "Enjoy up to AED 500 off, use code SUMMER"
           }
         ],
         "fareOfferList": [
           {
-            "plink": "https://www.cleartrip.ae/offers/uae/summer",
+            "plink": `${process.env.CLEARTRIP_BASE_URL}/offers/uae/summer`,
             "ptype": "CASHBACK",
             "ptext": "Enjoy up to AED 500 off, use code SUMMER"
           }
@@ -1468,7 +1468,7 @@
     "precision": true,
     "inde_multicity_msg": "We've designed this itinerary for you by combining multiple one-way flights to get the cheapest fares.",
     "specialRtCount": 0,
-    "deadLinkForKiwi": "https://www.cleartrip.com/faq/kiwi-trip",
+    "deadLinkForKiwi": `${process.env.CLEARTRIP_BASE_URL}/faq/kiwi-trip`,
     "cfilter": true,
     "zrcb": true,
     "minLayoverTime": 0,
@@ -1664,7 +1664,7 @@
     "jsonVer": "V3",
     "promos": {
       "41656194": {
-        "plink": "https://www.cleartrip.ae/offers/uae/summer",
+        "plink": `${process.env.CLEARTRIP_BASE_URL}/offers/uae/summer`,
         "ptype": "CASHBACK",
         "ptext": "Enjoy up to AED 500 off, use code SUMMER"
       }

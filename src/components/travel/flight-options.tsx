@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { FlightOption, TravelQuery } from "@/types/travel";
 import { FlightCard } from "./flight-card";
@@ -14,52 +14,59 @@ interface FlightOptionsProps {
   chatId: string;
 }
 
-export function FlightOptions({ flights: initialFlights, searchQuery: initialSearchQuery, chatId }: FlightOptionsProps) {
-  console.log('FlightOptions - Initial Props:', {
+const COUNTDOWN_TIME = 3;
+
+export function FlightOptions({
+  flights: initialFlights,
+  searchQuery: initialSearchQuery,
+  chatId,
+}: FlightOptionsProps) {
+  console.log("FlightOptions - Initial Props:", {
     initialFlights,
     initialSearchQuery,
-    chatId
+    chatId,
   });
-  
+
   const [flights, setFlights] = useState<FlightOption[]>(initialFlights);
-  const [searchQuery, setSearchQuery] = useState<TravelQuery>(initialSearchQuery);
-  const [countdown, setCountdown] = useState(15);
+  const [searchQuery, setSearchQuery] =
+    useState<TravelQuery>(initialSearchQuery);
+  const [countdown, setCountdown] = useState(COUNTDOWN_TIME);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [isCancelled, setIsCancelled] = useState(false);
   const [progress, setProgress] = useState(0);
 
   // Load saved flight data on component mount
   useEffect(() => {
-    console.log('FlightOptions - Loading saved data for chatId:', chatId);
+    console.log("FlightOptions - Loading saved data for chatId:", chatId);
     if (chatId) {
       const savedData = loadFlightData(chatId);
-      console.log('FlightOptions - Loaded saved data:', savedData);
-      
+      console.log("FlightOptions - Loaded saved data:", savedData);
+
       if (savedData && savedData.flights.length > 0) {
-        console.log('FlightOptions - Using saved flight data');
+        console.log("FlightOptions - Using saved flight data");
         setFlights(savedData.flights);
         setSearchQuery(savedData.searchQuery);
       } else if (initialFlights.length > 0) {
-        console.log('FlightOptions - No saved data, saving initial flights');
+        console.log("FlightOptions - No saved data, saving initial flights");
         saveFlightData(chatId, initialFlights, initialSearchQuery);
       } else {
-        console.log('FlightOptions - No saved data and no initial flights');
+        console.log("FlightOptions - No saved data and no initial flights");
       }
     } else {
-      console.log('FlightOptions - No chatId available');
+      console.log("FlightOptions - No chatId available");
     }
   }, [chatId, initialFlights, initialSearchQuery]);
 
   // Save flight data whenever it changes
   useEffect(() => {
-    console.log('FlightOptions - Current state:', {
+    console.log("FlightOptions - Current state:", {
       flights,
       searchQuery,
-      chatId
+      chatId,
     });
-    
+
     if (chatId && flights.length > 0) {
-      console.log('FlightOptions - Saving flight data');
+      console.log("FlightOptions - Saving flight data");
       saveFlightData(chatId, flights, searchQuery);
     }
   }, [chatId, flights, searchQuery]);
@@ -69,13 +76,13 @@ export function FlightOptions({ flights: initialFlights, searchQuery: initialSea
       const timer = setTimeout(() => {
         setCountdown(countdown - 1);
         // Calculate progress as a percentage of total time (15 seconds)
-        setProgress(((15 - countdown) / 15) * 100);
+        setProgress(((COUNTDOWN_TIME - countdown) / COUNTDOWN_TIME) * 100);
       }, 1000);
       return () => clearTimeout(timer);
     } else if (countdown === 0 && !isRedirecting && !isCancelled) {
       setIsRedirecting(true);
       const url = buildCleartripUrl();
-      window.open(url, '_blank', 'noopener,noreferrer');
+      window.open(url, "_blank", "noopener,noreferrer");
     }
   }, [countdown, isRedirecting, isCancelled]);
 
@@ -89,12 +96,12 @@ export function FlightOptions({ flights: initialFlights, searchQuery: initialSea
         No flights found for your search criteria.
       </div>
     );
-  } 
+  }
 
   // Function to format date for Cleartrip URL (DD/MM/YYYY)
   const formatDateForUrl = (dateString: string | null) => {
-    if (!dateString || dateString === '') {
-      return '';
+    if (!dateString || dateString === "") {
+      return "";
     }
     return dateString;
   };
@@ -103,26 +110,55 @@ export function FlightOptions({ flights: initialFlights, searchQuery: initialSea
   const buildCleartripUrl = () => {
     const params = new URLSearchParams({
       adults: (searchQuery.passengerCount || 1).toString(),
-      childs: '0',
-      infants: '0',
-      class: 'Economy',
+      childs: "0",
+      infants: "0",
+      class: "Economy",
       depart_date: formatDateForUrl(searchQuery.departDate),
       from: searchQuery.originAirport,
-      to: searchQuery.destinationAirport
+      to: searchQuery.destinationAirport,
     });
 
     if (searchQuery.returnDate) {
-      params.append('return_date', formatDateForUrl(searchQuery.returnDate));
+      params.append("return_date", formatDateForUrl(searchQuery.returnDate));
     }
 
-    return `https://www.cleartrip.om/flights/international/results?${params.toString()}`;
+    // Add filters if they exist
+    if (searchQuery.filters && searchQuery.filters.length > 0) {
+      const stops = searchQuery.filters
+        .filter((f) => f.type === "STOPS")
+        .map((f) => f.value)
+        .join(",");
+      if (stops) {
+        params.append("stops", stops);
+      }
+
+      const airlines = searchQuery.filters
+        .filter((f) => f.type === "AIRLINE")
+        .map((f) => f.value)
+        .join(",");
+      if (airlines) {
+        params.append("airline", airlines);
+      }
+
+      const departureTimes = searchQuery.filters
+        .filter((f) => f.type === "DEPARTURE_TIME")
+        .map((f) => f.value)
+        .join("|");
+      if (departureTimes) {
+        params.append("OW_DEPARTURE_TIME", departureTimes);
+      }
+    }
+
+    return `${
+      process.env.NEXT_PUBLIC_CLEARTRIP_BASE_URL
+    }/flights/international/results?${params.toString()}`;
   };
 
   const handleSeeMoreFlights = () => {
-    window.open(buildCleartripUrl(), '_blank', 'noopener,noreferrer');
+    window.open(buildCleartripUrl(), "_blank", "noopener,noreferrer");
   };
 
-  console.log('searchQuery ---> ', searchQuery)
+  console.log("searchQuery ---> ", searchQuery);
 
   return (
     <div className="space-y-6 w-full max-w-full overflow-x-hidden">
@@ -130,47 +166,83 @@ export function FlightOptions({ flights: initialFlights, searchQuery: initialSea
       <div className="bg-[#23272f] border border-teal-500/20 rounded-2xl p-2 mb-3 shadow-xl flex flex-col gap-2">
         {/* Top: Route */}
         <div className="flex items-center justify-center gap-10">
-          <span className="px-3 py-1.5 rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-bold text-base shadow">{searchQuery.originAirport || '-'}</span>
+          <span className="px-3 py-1.5 rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-bold text-base shadow">
+            {searchQuery.originAirport || "-"}
+          </span>
           <span className="flex items-center">
             <span className="w-2 h-2 bg-teal-400 rounded-full"></span>
             <span className="mx-1 w-12 border-t-2 border-dashed border-teal-400"></span>
             <span className="w-2 h-2 bg-cyan-400 rounded-full"></span>
           </span>
-          <span className="px-3 py-1.5 rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-bold text-base shadow">{searchQuery.destinationAirport || '-'}</span>
+          <span className="px-3 py-1.5 rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 text-white font-bold text-base shadow">
+            {searchQuery.destinationAirport || "-"}
+          </span>
         </div>
         {/* Middle: Dates */}
         <div className="flex flex-wrap justify-center gap-2 items-center">
           <span className="flex items-center gap-1.5">
-            <svg className="h-4 w-4 text-cyan-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path d="M8 7V3m8 4V3M3 11h18M5 19h14a2 2 0 002-2v-7a2 2 0 00-2-2H5a2 2 0 00-2 2v7a2 2 0 002 2z"/>
+            <svg
+              className="h-4 w-4 text-cyan-400"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+            >
+              <path d="M8 7V3m8 4V3M3 11h18M5 19h14a2 2 0 002-2v-7a2 2 0 00-2-2H5a2 2 0 00-2 2v7a2 2 0 002 2z" />
             </svg>
             <span className="text-xs text-gray-400">Depart</span>
-            <span className="text-white font-semibold text-sm">{searchQuery.departDate || '-'}</span>
+            <span className="text-white font-semibold text-sm">
+              {searchQuery.departDate || "-"}
+            </span>
           </span>
           {searchQuery.returnDate && (
             <span className="flex items-center gap-1.5">
-              <svg className="h-4 w-4 text-cyan-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path d="M8 7V3m8 4V3M3 11h18M5 19h14a2 2 0 002-2v-7a2 2 0 00-2-2H5a2 2 0 00-2 2v7a2 2 0 002 2z"/>
+              <svg
+                className="h-4 w-4 text-cyan-400"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+              >
+                <path d="M8 7V3m8 4V3M3 11h18M5 19h14a2 2 0 002-2v-7a2 2 0 00-2-2H5a2 2 0 00-2 2v7a2 2 0 002 2z" />
               </svg>
               <span className="text-xs text-gray-400">Return</span>
-              <span className="text-white font-semibold text-sm">{searchQuery.returnDate}</span>
+              <span className="text-white font-semibold text-sm">
+                {searchQuery.returnDate}
+              </span>
             </span>
           )}
         </div>
         {/* Bottom: Passengers & Filters */}
         <div className="flex flex-wrap justify-between items-center gap-2">
           <span className="flex items-center gap-1.5">
-            <svg className="h-4 w-4 text-cyan-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M9 20H4v-2a3 3 0 015.356-1.857M15 11a4 4 0 11-8 0 4 4 0 018 0z"/>
+            <svg
+              className="h-4 w-4 text-cyan-400"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+            >
+              <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M9 20H4v-2a3 3 0 015.356-1.857M15 11a4 4 0 11-8 0 4 4 0 018 0z" />
             </svg>
             <span className="text-xs text-gray-400">Passengers</span>
-            <span className="text-white font-semibold text-sm">{searchQuery.passengerCount || 1}</span>
+            <span className="text-white font-semibold text-sm">
+              {searchQuery.passengerCount || 1}
+            </span>
           </span>
           {searchQuery.filters && searchQuery.filters.length > 0 && (
             <div className="flex flex-wrap gap-1 items-center">
               <span className="flex items-center gap-1 text-teal-400 font-semibold">
                 <span className="bg-teal-500/20 rounded-full p-0.5">
-                  <svg className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L15 13.414V19a1 1 0 01-1.447.894l-4-2A1 1 0 019 17v-3.586L3.293 6.707A1 1 0 013 6V4z"/></svg>
+                  <svg
+                    className="h-3 w-3"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L15 13.414V19a1 1 0 01-1.447.894l-4-2A1 1 0 019 17v-3.586L3.293 6.707A1 1 0 013 6V4z" />
+                  </svg>
                 </span>
                 <span className="text-xs">Filters:</span>
               </span>
@@ -181,18 +253,30 @@ export function FlightOptions({ flights: initialFlights, searchQuery: initialSea
                 >
                   {(() => {
                     switch (filter.type) {
-                      case 'STOPS':
-                        return `${filter.value === '0' ? 'Direct' : filter.value + ' Stop' + (filter.value !== '1' ? 's' : '')}`;
-                      case 'AIRLINE':
+                      case "STOPS":
+                        return `${
+                          filter.value === "0"
+                            ? "Direct"
+                            : filter.value +
+                              " Stop" +
+                              (filter.value !== "1" ? "s" : "")
+                        }`;
+                      case "AIRLINE":
                         return `Airline: ${filter.value}`;
-                      case 'DEPARTURE_TIME':
+                      case "DEPARTURE_TIME":
                         switch (filter.value) {
-                          case 'EARLY_MORNING': return 'Early Morning';
-                          case 'MORNING': return 'Morning';
-                          case 'AFTERNOON': return 'Afternoon';
-                          case 'EVENING': return 'Evening';
-                          case 'NIGHT': return 'Night';
-                          default: return filter.value;
+                          case "EARLY_MORNING":
+                            return "Early Morning";
+                          case "MORNING":
+                            return "Morning";
+                          case "AFTERNOON":
+                            return "Afternoon";
+                          case "EVENING":
+                            return "Evening";
+                          case "NIGHT":
+                            return "Night";
+                          default:
+                            return filter.value;
                         }
                       default:
                         return `${filter.type}: ${filter.value}`;
@@ -226,10 +310,11 @@ export function FlightOptions({ flights: initialFlights, searchQuery: initialSea
               />
             )}
             <span className="relative z-10 flex items-center gap-2">
-              {isCancelled 
-                ? 'See All Flight Options' 
-                : `See All Flight Options ${countdown > 0 ? `(${countdown}s)` : ''}`
-              }
+              {isCancelled
+                ? "See All Flight Options"
+                : `See All Flight Options ${
+                    countdown > 0 ? `(${countdown}s)` : ""
+                  }`}
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-5 w-5"
@@ -245,18 +330,30 @@ export function FlightOptions({ flights: initialFlights, searchQuery: initialSea
             </span>
             {/* Pill-shaped Close Icon */}
             {!isCancelled && countdown > 0 && (
-              <button
-                onClick={(e) => { e.stopPropagation(); handleCancel(); }}
-                className="relative z-10 ml-4 flex items-center px-2 py-1 rounded-full bg-white/80 hover:bg-white text-orange-600 hover:text-orange-700 shadow transition-all duration-200 text-sm font-bold"
+              <div
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleCancel();
+                }}
+                className="relative z-10 ml-4 flex items-center px-2 py-1 rounded-full bg-white/80 hover:bg-white text-orange-600 hover:text-orange-700 shadow transition-all duration-200 text-sm font-bold cursor-pointer"
                 title="Cancel auto-redirect"
-                style={{ minWidth: '2rem', minHeight: '2rem' }}
+                style={{ minWidth: "2rem", minHeight: "2rem" }}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleCancel();
+                  }
+                }}
               >
                 <X className="h-4 w-4" />
-              </button>
+              </div>
             )}
           </Button>
         </div>
       </div>
     </div>
   );
-} 
+}
