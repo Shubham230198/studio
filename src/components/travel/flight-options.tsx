@@ -108,8 +108,7 @@ export function FlightOptions({
 
   // Function to build Cleartrip search URL
   const buildCleartripUrl = () => {
-    const baseUrl =
-      process.env.NEXT_PUBLIC_CLEARTRIP_BASE_URL || "https://www.cleartrip.om";
+    const baseUrl = "https://www.cleartrip.om";
     const params = new URLSearchParams({
       adults: (searchQuery.passengerCount || 1).toString(),
       childs: "0",
