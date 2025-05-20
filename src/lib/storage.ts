@@ -96,6 +96,11 @@ export function saveFlightData(
   searchQuery: any
 ) {
   try {
+    console.log("Storage - Saving flight data:", {
+      chatId,
+      flightsCount: flights.length,
+      searchQuery,
+    });
     const sessions = loadChatSessions();
     const sessionIndex = sessions.findIndex((session) => session.id === chatId);
 
@@ -106,6 +111,9 @@ export function saveFlightData(
         timestamp: new Date(),
       };
       saveChatSessions(sessions);
+      console.log("Storage - Successfully saved flight data");
+    } else {
+      console.log("Storage - No session found for chatId:", chatId);
     }
   } catch (error) {
     console.error("Error saving flight data to chat session:", error);
@@ -114,6 +122,7 @@ export function saveFlightData(
 
 export function loadFlightData(chatId: string) {
   try {
+    console.log("Storage - Loading flight data for chatId:", chatId);
     const sessions = loadChatSessions();
     const session = sessions.find((session) => session.id === chatId);
 
@@ -124,9 +133,19 @@ export function loadFlightData(chatId: string) {
       const hoursDiff =
         (now.getTime() - timestamp.getTime()) / (1000 * 60 * 60);
 
+      console.log("Storage - Found flight data:", {
+        hasData: true,
+        flightsCount: session.flightData.flights.length,
+        hoursOld: hoursDiff,
+      });
+
       if (hoursDiff < 1) {
         return session.flightData;
+      } else {
+        console.log("Storage - Flight data is too old (more than 1 hour)");
       }
+    } else {
+      console.log("Storage - No flight data found for chatId:", chatId);
     }
   } catch (error) {
     console.error("Error loading flight data from chat session:", error);

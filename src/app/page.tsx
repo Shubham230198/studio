@@ -34,8 +34,26 @@ export default function HomePage() {
     const loadedConversations = loadConversations();
     const loadedActiveChatId = loadActiveChatId();
 
+    const processedConversations = { ...loadedConversations };
+    Object.entries(processedConversations).forEach(([chatId, messages]) => {
+      processedConversations[chatId] = messages.map(message => {
+        const session = loadedSessions.find(s => s.id === chatId);
+        if (session?.flightData && message.text.includes('Here are best selected flight options for you:')) {
+          return {
+            ...message,
+            components: <FlightOptions 
+              flights={session.flightData.flights} 
+              searchQuery={session.flightData.searchQuery}
+              chatId={chatId}
+            />
+          };
+        }
+        return message;
+      });
+    });
+
     setChatSessions(loadedSessions.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()));
-    setAllConversations(loadedConversations);
+    setAllConversations(processedConversations);
 
     if (loadedActiveChatId && loadedSessions.find(s => s.id === loadedActiveChatId)) {
       setActiveChatId(loadedActiveChatId);
@@ -171,7 +189,11 @@ export default function HomePage() {
             sender: 'ai',
             text: 'Here are best selected flight options for you:',
             timestamp: new Date(),
-            components: <FlightOptions flights={result.flights} searchQuery={result.validQuery} />
+            components: <FlightOptions 
+              flights={result.flights} 
+              searchQuery={result.validQuery} 
+              chatId={currentChatId!}
+            />
           };
           setAllConversations(prevConversations => ({
             ...prevConversations,

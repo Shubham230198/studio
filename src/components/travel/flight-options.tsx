@@ -7,16 +7,19 @@ import { useEffect, useState } from "react";
 import { Progress } from "@/components/ui/progress";
 import { X } from "lucide-react";
 import { saveFlightData, loadFlightData } from "@/lib/storage";
-import { useParams } from "next/navigation";
 
 interface FlightOptionsProps {
   flights: FlightOption[];
   searchQuery: TravelQuery;
+  chatId: string;
 }
 
-export function FlightOptions({ flights: initialFlights, searchQuery: initialSearchQuery }: FlightOptionsProps) {
-  const params = useParams();
-  const chatId = params?.chatId as string;
+export function FlightOptions({ flights: initialFlights, searchQuery: initialSearchQuery, chatId }: FlightOptionsProps) {
+  console.log('FlightOptions - Initial Props:', {
+    initialFlights,
+    initialSearchQuery,
+    chatId
+  });
   
   const [flights, setFlights] = useState<FlightOption[]>(initialFlights);
   const [searchQuery, setSearchQuery] = useState<TravelQuery>(initialSearchQuery);
@@ -27,18 +30,36 @@ export function FlightOptions({ flights: initialFlights, searchQuery: initialSea
 
   // Load saved flight data on component mount
   useEffect(() => {
+    console.log('FlightOptions - Loading saved data for chatId:', chatId);
     if (chatId) {
       const savedData = loadFlightData(chatId);
-      if (savedData) {
+      console.log('FlightOptions - Loaded saved data:', savedData);
+      
+      if (savedData && savedData.flights.length > 0) {
+        console.log('FlightOptions - Using saved flight data');
         setFlights(savedData.flights);
         setSearchQuery(savedData.searchQuery);
+      } else if (initialFlights.length > 0) {
+        console.log('FlightOptions - No saved data, saving initial flights');
+        saveFlightData(chatId, initialFlights, initialSearchQuery);
+      } else {
+        console.log('FlightOptions - No saved data and no initial flights');
       }
+    } else {
+      console.log('FlightOptions - No chatId available');
     }
-  }, [chatId]);
+  }, [chatId, initialFlights, initialSearchQuery]);
 
   // Save flight data whenever it changes
   useEffect(() => {
+    console.log('FlightOptions - Current state:', {
+      flights,
+      searchQuery,
+      chatId
+    });
+    
     if (chatId && flights.length > 0) {
+      console.log('FlightOptions - Saving flight data');
       saveFlightData(chatId, flights, searchQuery);
     }
   }, [chatId, flights, searchQuery]);
