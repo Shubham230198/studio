@@ -124,113 +124,75 @@ export default function HomePage() {
     }
     
     try {
-      // Check if this is a travel-related query
-      const isTravelQuery = promptText.toLowerCase().includes('flight') || 
-                           promptText.toLowerCase().includes('travel') ||
-                           promptText.toLowerCase().includes('itinerary') ||
-                           promptText.toLowerCase().includes('trip');
+      
+      const result = await planItineraryFlow({ 
+        userMessage: promptText,
+        previousQuery: travelQueries[currentChatId!],
+        chatContext: currentChatId && allConversations[currentChatId] ? 
+          allConversations[currentChatId].map(msg => ({
+            id: msg.id,
+            sender: msg.sender,
+            text: msg.text,
+            timestamp: String(msg.timestamp)
+          })) : 
+          undefined
+      });
 
-      if (isTravelQuery) {
-        const result = await planItineraryFlow({ 
-          userMessage: promptText,
-          previousQuery: travelQueries[currentChatId!],
-          chatContext: currentChatId && allConversations[currentChatId] ? 
-            allConversations[currentChatId].map(msg => ({
-              id: msg.id,
-              sender: msg.sender,
-              text: msg.text,
-              timestamp: String(msg.timestamp)
-            })) : 
-            undefined
+      console.log('result --> ', JSON.stringify(result));
+
+      // Update travel query state for this chat
+      if ('flights' in result) {
+        console.log('Previous travel queries:', travelQueries);
+        console.log('Updating travel query for chat:', currentChatId);
+        console.log('New flight data:', result.flights);
+        
+        setTravelQueries(prev => {
+          const newQueries = {
+            ...prev,
+            [currentChatId!]: {
+              originAirport: result.validQuery.originAirport  || '',
+              destinationAirport: result.validQuery.destinationAirport || '',
+              departDate: result.validQuery.departDate || '',
+              returnDate: result.validQuery.returnDate || undefined,
+              passengerCount: result.validQuery.passengerCount || 1,
+              isRoundTrip: result.validQuery.isRoundTrip || false,
+            }
+          };
+          console.log('Updated travel queries:', newQueries);
+          return newQueries;
         });
+      }
 
-        console.log('result --> ', JSON.stringify(result));
-
-        // Update travel query state for this chat
-        if ('flights' in result) {
-          console.log('Previous travel queries:', travelQueries);
-          console.log('Updating travel query for chat:', currentChatId);
-          console.log('New flight data:', result.flights);
-          
-          setTravelQueries(prev => {
-            const newQueries = {
-              ...prev,
-              [currentChatId!]: {
-                originAirport: result.validQuery.originAirport  || '',
-                destinationAirport: result.validQuery.destinationAirport || '',
-                departDate: result.validQuery.departDate || '',
-                returnDate: result.validQuery.returnDate || undefined,
-                passengerCount: result.validQuery.passengerCount || 1,
-                isRoundTrip: result.validQuery.isRoundTrip || false,
-              }
-            };
-            console.log('Updated travel queries:', newQueries);
-            return newQueries;
-          });
-        }
-
-        if ('ask' in result) {
-          // Handle follow-up question
-          const aiMessage: Message = {
-            id: crypto.randomUUID(),
-            sender: 'ai',
-            text: result.ask,
-            timestamp: new Date(),
-          };
-          setAllConversations(prevConversations => ({
-            ...prevConversations,
-            [currentChatId!]: [...(prevConversations[currentChatId!] || []), aiMessage],
-          }));
-        } else if ('flights' in result) {
-          // Handle direct flights result
-          
-          const aiMessage: Message = {
-            id: crypto.randomUUID(),
-            sender: 'ai',
-            text: 'Here are best selected flight options for you:',
-            timestamp: new Date(),
-            components: <FlightOptions 
-              flights={result.flights} 
-              searchQuery={result.validQuery} 
-              chatId={currentChatId!}
-            />
-          };
-          setAllConversations(prevConversations => ({
-            ...prevConversations,
-            [currentChatId!]: [...(prevConversations[currentChatId!] || []), aiMessage],
-          }));
-        } else {
-          // // Handle complete plan (legacy)
-          // const aiMessage: Message = {
-          //   id: crypto.randomUUID(),
-          //   sender: 'ai',
-          //   text: result.plan.summary,
-          //   timestamp: new Date(),
-          //   components: (
-          //     <div className="space-y-6">
-          //       <FlightOptions flights={result.plan.flights} searchQuery={travelQueries[currentChatId!] || {}} chatId={currentChatId!} />
-          //       <ItinerarySummary plan={result.plan} chatId={currentChatId!} />
-          //     </div>
-          //   )
-          // };
-          // setAllConversations(prevConversations => ({
-          //   ...prevConversations,
-          //   [currentChatId!]: [...(prevConversations[currentChatId!] || []), aiMessage],
-          // }));
-        }
-      } else {
-        // Handle regular chat flow
-        const aiResponse: ChatFlowOutput = await chatFlow({ prompt: promptText });
+      if ('ask' in result) {
+        // Handle follow-up question
         const aiMessage: Message = {
           id: crypto.randomUUID(),
           sender: 'ai',
-          text: aiResponse.response,
+          text: result.ask,
           timestamp: new Date(),
         };
         setAllConversations(prevConversations => ({
           ...prevConversations,
           [currentChatId!]: [...(prevConversations[currentChatId!] || []), aiMessage],
         }));
+      } else if ('flights' in result) {
+        // Handle direct flights result
+        
+        const aiMessage: Message = {
+          id: crypto.randomUUID(),
+          sender: 'ai',
+          text: 'Here are best selected flight options for you:',
+          timestamp: new Date(),
+          components: <FlightOptions 
+            flights={result.flights} 
+            searchQuery={result.validQuery} 
+            chatId={currentChatId!}
+          />
+        };
+        setAllConversations(prevConversations => ({
+          ...prevConversations,
+          [currentChatId!]: [...(prevConversations[currentChatId!] || []), aiMessage],
+      }));
       }
     } catch (error) {
       console.error("Error getting AI response:", error);
