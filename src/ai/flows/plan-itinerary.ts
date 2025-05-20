@@ -6,6 +6,9 @@ import { flightSearchFn } from "@/lib/flight-search";
 import { reviewFlight } from "@/lib/flight-api";
 import type { TravelQuery, FlightOption } from "@/types/travel";
 
+
+const mandatoryFields = ["originAirport", "destinationAirport", "departDate", "passengerCount", "isRoundTrip"];
+
 const slotExtractionPrompt = ai.definePrompt({
   name: "slotExtractionPrompt",
   input: {
@@ -48,31 +51,36 @@ const slotExtractionPrompt = ai.definePrompt({
             - AFTERNOON (for flights departing between Noon to 4 pm)
             - EVENING (for flights departing between 4 pm to 8 pm)
             - NIGHT (for flights departing between 8 pm to Midnight)
+          - ARRIVAL_TIME:
+            - EARLY_MORNING (for flights arriving between Midnight to 8 am)
+            - MORNING (for flights arriving between 8 am to Noon)
+            - AFTERNOON (for flights arriving between Noon to 4 pm)
+            - EVENING (for flights arriving between 4 pm to 8 pm)
+            - NIGHT (for flights arriving between 8 pm to Midnight)
 
 
       Instructions:
       - Today's date is ${new Date().toLocaleDateString("en-GB")}
       - Compulsory fields are originAirport, destinationAirport, departDate, passengerCount, isRoundTrip.
       - If user doesn't mention the complete date, please use the most matching upcoming date, (e.g. if user says "next Friday", please use the date of next Friday)
+      - If user doesn't mention anything about date, please mark it as null.
 
       Rules:
       1. originAirport and destinationAirport must be valid IATA codes (3 letters)
       2. departDate and returnDate must be in DD/MM/YYYY format
-      3. Minimum default passengerCount is 1.
-      4. If departDate is not given, please use today's date.
-      5. List any missing or invalid fields in missingFields array
-      6. If the user mentions a city or country, use the IATA code for the nearest airport.
-      7. If user doesn't mention anything about isRoundTrip, please assume it to be false.
-      8. If user doesn't mention anything about returnDate, please assume it to be null.
+      3. List any missing or invalid fields in missingFields array
+      4. If the user mentions a city or country, use the IATA code for the nearest airport.
+      5. If user doesn't mention anything about isRoundTrip, please assume it to be false.
+      6. If user doesn't mention anything about returnDate, please assume it to be null.
 
       Examples:
-      - "I want fastest flight from DEL to BOM" -> {originAirport: "DEL", destinationAirport: "BOM", departDate: null, passengerCount: null, missingFields: ["departDate", "passengerCount"], returnDate: null, isRoundTrip: false, filter: "fastest"}
-      - "I want to fly from DEL to BOM on 25/12/2024 with 2 people" -> {originAirport: "DEL", destinationAirport: "BOM", departDate: "25/12/2024", passengerCount: 2, missingFields: [], returnDate: null, isRoundTrip: false}
-      - "Looking for flights to London" -> {originAirport: null, destinationAirport: "LHR", departDate: null, passengerCount: null, missingFields: ["originAirport", "departDate", "passengerCount"], returnDate: null, isRoundTrip: false}
-      - "Flight from Mumbai to Delhi" -> {originAirport: "BOM", destinationAirport: "DEL", departDate: null, passengerCount: null, missingFields: ["departDate", "passengerCount"], returnDate: null, isRoundTrip: false}
-      - "I want to fly from DEL to DXB on 25/12 and return on 27/12" -> {originAirport: "DEL", destinationAirport: "DXB", departDate: "25/12/2025", passengerCount: 1, missingFields: [], returnDate: "27/12/2025", isRoundTrip: true}
-      - "Help me choose a flight to fly from Delhi to Bangalore next Friday" -> {originAirport: "DEL", destinationAirport: "BLR", departDate: "23/05/2025", passengerCount: null, missingFields: ["passengerCount"], returnDate: null, isRoundTrip: false}
-      - "Flight from Mumbai to Dubai from 02/11 to 04/11" -> {originAirport: "BOM", destinationAirport: "DXB", departDate: "02/11/2025", passengerCount: 0, missingFields: ["passengerCount"], returnDate: "04/11/2025", isRoundTrip: true}
+      - "I want fastest flight from DEL to BOM" -> {originAirport: "DEL", destinationAirport: "BOM", departDate: null, passengerCount: null, missingFields: ["departDate", "passengerCount"], returnDate: null, isRoundTrip: false, filter: [{type: "FLIGHT_DURATION", value: true}}]
+      - "I want to fly from DEL to BOM on 25/12/2024 with 2 people" -> {originAirport: "DEL", destinationAirport: "BOM", departDate: "25/12/2024", passengerCount: 2, missingFields: [], returnDate: null, isRoundTrip: false, filter: []}
+      - "Looking for flights to London" -> {originAirport: null, destinationAirport: "LHR", departDate: null, passengerCount: null, missingFields: ["originAirport", "departDate", "passengerCount"], returnDate: null, isRoundTrip: false, filter: []}
+      - "Flight from Mumbai to Delhi" -> {originAirport: "BOM", destinationAirport: "DEL", departDate: null, passengerCount: null, missingFields: ["departDate", "passengerCount"], returnDate: null, isRoundTrip: false, filter: []}
+      - "I want to fly from DEL to DXB on 25/12 and return on 27/12" -> {originAirport: "DEL", destinationAirport: "DXB", departDate: "25/12/2025", passengerCount: 1, missingFields: [], returnDate: "27/12/2025", isRoundTrip: true, filter: []}
+      - "Help me choose a flight to fly from Delhi to Bangalore next Friday" -> {originAirport: "DEL", destinationAirport: "BLR", departDate: "23/05/2025", passengerCount: null, missingFields: ["passengerCount"], returnDate: null, isRoundTrip: false, filter: []}
+      - "Flight from Mumbai to Dubai from 02/11 to 04/11" -> {originAirport: "BOM", destinationAirport: "DXB", departDate: "02/11/2025", passengerCount: 0, missingFields: ["passengerCount"], returnDate: "04/11/2025", isRoundTrip: true, filter: []}
 
       User: {{{userMessage}}}
 
@@ -254,9 +262,13 @@ export const planItineraryFlow = ai.defineFlow(
     // 2. Check for missing fields and ask follow-up questions
     console.log("Step 4: Checking for missing fields...");
     const missingFields = Object.entries(merged)
-      .filter(([_, value]) => value === null)
+      .filter(([key, value]) => (mandatoryFields.includes(key) && (value === null || value == "null")))
       .map(([key]) => key);
     console.log("Missing fields:", missingFields);
+
+    if (merged.isRoundTrip && merged.isRoundTrip == true && merged.returnDate == null) {
+      missingFields.push("returnDate");
+    }
 
     if (missingFields.length > 0) {
       const fieldNames = {
@@ -264,6 +276,7 @@ export const planItineraryFlow = ai.defineFlow(
         destinationAirport: "destination airport",
         departDate: "departure date",
         passengerCount: "number of passengers",
+        returnDate: "return date",
       };
 
       const missingFieldNames = missingFields
@@ -310,13 +323,6 @@ export const planItineraryFlow = ai.defineFlow(
         (a, b) => a.durationMinutes - b.durationMinutes
       )[0];
 
-      // Find non-stop cheapest flight
-      const nonStopFlights = allFlights.filter((flight) => flight.stops === 0);
-      const cheapestNonStopFlight =
-        nonStopFlights.length > 0
-          ? nonStopFlights.sort((a, b) => a.price - b.price)[0]
-          : null;
-
       // Combine flights, removing duplicates and assigning multiple categories
       const topFlights = new Map<string, FlightOption>();
 
@@ -338,21 +344,6 @@ export const planItineraryFlow = ai.defineFlow(
         } else {
           fastestFlight.categories = ["fastest"];
           topFlights.set(fastestFlight.id, fastestFlight);
-        }
-      }
-
-      // Add cheapest non-stop flight
-      if (cheapestNonStopFlight) {
-        if (topFlights.has(cheapestNonStopFlight.id)) {
-          // If this flight is already in the list
-          const existingFlight = topFlights.get(cheapestNonStopFlight.id)!;
-          existingFlight.categories = [
-            ...(existingFlight.categories || []),
-            "non-stop",
-          ];
-        } else {
-          cheapestNonStopFlight.categories = ["non-stop"];
-          topFlights.set(cheapestNonStopFlight.id, cheapestNonStopFlight);
         }
       }
 
@@ -387,7 +378,7 @@ export const planItineraryFlow = ai.defineFlow(
         couponData: flight.couponData,
         itineraryId: flight.itineraryId,
         itineraryStatus: flight.itineraryStatus,
-        reviewUrl: `https://www.cleartrip.ae/flights/itinerary/${flight.itineraryId}/info?ancillaryEnabled=true`,
+        reviewUrl: `${process.env.CLEARTRIP_BASE_URL}/flights/itinerary/${flight.itineraryId}/info?ancillaryEnabled=true`,
         categories: flight.categories || [],
       }));
 

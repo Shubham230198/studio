@@ -115,7 +115,34 @@ export function FlightOptions({ flights: initialFlights, searchQuery: initialSea
       params.append('return_date', formatDateForUrl(searchQuery.returnDate));
     }
 
-    return `https://www.cleartrip.om/flights/international/results?${params.toString()}`;
+    // Add filters if they exist
+    if (searchQuery.filters && searchQuery.filters.length > 0) {
+      const stops = searchQuery.filters
+        .filter(f => f.type === 'STOPS')
+        .map(f => f.value)
+        .join(',');
+      if (stops) {
+        params.append('stops', stops);
+      }
+
+      const airlines = searchQuery.filters
+        .filter(f => f.type === 'AIRLINE')
+        .map(f => f.value)
+        .join(',');
+      if (airlines) {
+        params.append('airline', airlines);
+      }
+
+      const departureTimes = searchQuery.filters
+        .filter(f => f.type === 'DEPARTURE_TIME')
+        .map(f => f.value)
+        .join('|');
+      if (departureTimes) {
+        params.append('OW_DEPARTURE_TIME', departureTimes);
+      }
+    }
+
+    return `${process.env.CLEARTRIP_BASE_URL}/flights/international/results?${params.toString()}`;
   };
 
   const handleSeeMoreFlights = () => {
