@@ -80,12 +80,12 @@ export function FlightCard({ flight }: FlightCardProps) {
 
   return (
     <div 
-      className="rounded-xl border bg-white py-3 px-4 shadow-sm flex flex-col gap-1.5 cursor-pointer hover:shadow-md transition-shadow relative"
+      className="rounded-xl border bg-white py-3 px-4 shadow-sm flex flex-col gap-1.5 cursor-pointer hover:shadow-md transition-shadow relative w-full"
       onClick={handleCardClick}
     >
       {/* Category Tags - now inside the card, top-left, horizontal */}
       {flight.categories && flight.categories.length > 0 && (
-        <div className="flex flex-row gap-1.5 -mt-0.5">
+        <div className="flex flex-wrap gap-1.5 -mt-0.5">
           {flight.categories.map((category, index) => (
             <div
               key={index}
@@ -107,9 +107,9 @@ export function FlightCard({ flight }: FlightCardProps) {
         </div>
       )}
 
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         {/* Airline logo and name */}
-        <div className="flex items-center gap-2 min-w-[130px]">
+        <div className="flex items-center gap-2 min-w-[130px] w-full sm:w-auto">
           <div className="flex flex-col gap-0.5">
             {Array.from(new Set(flight.flightNumbers.map(flightNumber => flightNumber.split('-')[0]))).map((airlineCode) => (
               <div 
@@ -131,7 +131,7 @@ export function FlightCard({ flight }: FlightCardProps) {
         </div>
 
         {/* Times and date */}
-        <div className="flex flex-col items-center flex-1">
+        <div className="flex flex-col items-center flex-1 w-full sm:w-auto">
           <div className="flex items-end gap-1.5">
             <div className="flex items-baseline gap-1">
               <span className="text-lg font-bold text-gray-900">{formatTime(flight.departTime)}</span>
@@ -142,7 +142,6 @@ export function FlightCard({ flight }: FlightCardProps) {
               <span className="text-lg font-bold text-gray-900">{formatTime(flight.arriveTime)}</span>
               <span className="text-[10px] text-gray-500">{formatDate(flight.arriveTime)}</span>
             </div>
-            {/* <span className="text-xs text-red-500 font-semibold ml-1">{formatDistanceToNow(new Date(flight.departTime))}</span> */}
           </div>
           <div className="text-[10px] text-gray-600 leading-tight">
             {formatDuration(flight.durationMinutes)}
@@ -155,10 +154,10 @@ export function FlightCard({ flight }: FlightCardProps) {
         </div>
 
         {/* Price and Book button */}
-        <div className="flex flex-col items-end min-w-[130px] gap-1">
+        <div className="flex flex-col items-end min-w-[130px] w-full sm:w-auto gap-1">
           <span className="text-lg font-bold text-gray-900">AED {flight.price}</span>
           <Button 
-            className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-1 rounded-lg text-sm font-semibold shadow h-7"
+            className="bg-orange-500 hover:bg-orange-600 text-white px-5 py-1 rounded-lg text-sm font-semibold shadow h-7 w-full sm:w-auto"
             onClick={(e) => {
               e.stopPropagation(); // Prevent card click event
               if (flight.bookingUrl) {

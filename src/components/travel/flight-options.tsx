@@ -43,9 +43,7 @@ export function FlightOptions({ flights, searchQuery }: FlightOptionsProps) {
         No flights found for your search criteria.
       </div>
     );
-  }
-
-  console.error('flights', flights);
+  } 
 
   // Function to format date for Cleartrip URL (DD/MM/YYYY)
   const formatDateForUrl = (dateString: string | null) => {
@@ -80,17 +78,17 @@ export function FlightOptions({ flights, searchQuery }: FlightOptionsProps) {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-4">
+    <div className="space-y-6 w-full max-w-full overflow-x-hidden">
+      <div className="space-y-4 w-full">
         {flights.map((flight) => (
           <FlightCard key={flight.id} flight={flight} />
         ))}
       </div>
 
       {/* See More Flights Button with Progress */}
-      <div className="space-y-2">
+      <div className="space-y-2 w-full">
         {!isCancelled && countdown > 0 && (
-          <div className="relative">
+          <div className="relative w-full">
             <Progress value={progress} className="h-2 transition-all duration-1000 ease-linear" />
             <button
               onClick={handleCancel}
@@ -101,12 +99,12 @@ export function FlightOptions({ flights, searchQuery }: FlightOptionsProps) {
             </button>
           </div>
         )}
-        <div className="flex justify-center">
+        <div className="flex justify-center w-full">
           <Button
             onClick={handleSeeMoreFlights}
-            className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg text-lg font-semibold shadow flex items-center gap-2"
+            className="bg-orange-500 hover:bg-orange-600 text-white px-4 sm:px-6 py-2 rounded-lg text-base sm:text-lg font-semibold shadow flex items-center gap-2 w-full sm:w-auto"
           >
-            <span>
+            <span className="whitespace-nowrap">
               {isCancelled 
                 ? 'See All Flight Options' 
                 : `See All Flight Options ${countdown > 0 ? `(${countdown}s)` : ''}`

@@ -37,10 +37,11 @@ const slotExtractionPrompt = ai.definePrompt({
       1. originAirport and destinationAirport must be valid IATA codes (3 letters)
       2. departDate and returnDate must be in DD/MM/YYYY format
       3. Minimum default passengerCount is 1.
-      4. List any missing or invalid fields in missingFields array
-      5. If the user mentions a city or country, use the IATA code for the nearest airport.
-      6. If user doesn't mention anything about isRoundTrip, please assume it to be false.
-      7. If user doesn't mention anything about returnDate, please assume it to be null.
+      4. If departDate is not given, please use today's date.
+      5. List any missing or invalid fields in missingFields array
+      6. If the user mentions a city or country, use the IATA code for the nearest airport.
+      7. If user doesn't mention anything about isRoundTrip, please assume it to be false.
+      8. If user doesn't mention anything about returnDate, please assume it to be null.
 
       Examples:
       - "I want to fly from DEL to BOM on 25/12/2024 with 2 people" -> {originAirport: "DEL", destinationAirport: "BOM", departDate: "25/12/2024", passengerCount: 2, missingFields: [], returnDate: null, isRoundTrip: false}

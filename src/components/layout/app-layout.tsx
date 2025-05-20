@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { ReactNode } from 'react';
@@ -56,10 +55,10 @@ export default function AppLayout({ sidebar, chatWindow, promptComposer, onNewCh
         </Sheet>
         
         <div className="flex flex-1 flex-col overflow-hidden">
-          <main className="flex-1 overflow-y-auto">
+          <main className="flex-1 overflow-y-auto px-4 pb-4">
             {chatWindow}
           </main>
-          <div className="sticky bottom-0 bg-background border-t border-border p-4 z-10 mt-2">
+          <div className="sticky bottom-0 bg-background border-t border-border p-4 z-10">
             {promptComposer}
           </div>
         </div>
@@ -70,15 +69,15 @@ export default function AppLayout({ sidebar, chatWindow, promptComposer, onNewCh
   // Desktop layout
   return (
     <div className="flex h-screen bg-background text-foreground">
-      <div className="flex-shrink-0 w-[240px]"> {/* Desktop Sidebar container */}
+      <div className="flex-shrink-0 w-[240px] border-r border-border"> {/* Desktop Sidebar container */}
         {sidebar()} {/* Call without closeSheet for desktop */}
       </div>
       
       <div className="flex flex-1 flex-col overflow-hidden">
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto px-6 pb-6">
           {chatWindow}
         </main>
-        <div className="sticky bottom-0 bg-background border-t border-border p-4 z-10 mt-2">
+        <div className="sticky bottom-0 bg-background border-t border-border p-4 z-10">
           {promptComposer}
         </div>
       </div>

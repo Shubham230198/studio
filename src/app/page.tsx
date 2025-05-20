@@ -165,7 +165,6 @@ export default function HomePage() {
           }));
         } else if ('flights' in result) {
           // Handle direct flights result
-          console.error('result --> ', JSON.stringify(result));
           
           const aiMessage: Message = {
             id: crypto.randomUUID(),
