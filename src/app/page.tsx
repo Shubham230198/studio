@@ -34,57 +34,64 @@ export default function HomePage() {
   >({});
 
   useEffect(() => {
-    const loadedSessions = loadChatSessions();
-    const loadedConversations = loadConversations();
-    const loadedActiveChatId = loadActiveChatId();
-
-    const processedConversations = { ...loadedConversations };
-    Object.entries(processedConversations).forEach(([chatId, messages]) => {
-      processedConversations[chatId] = messages.map((message) => {
-        const session = loadedSessions.find((s) => s.id === chatId);
-        if (
-          session?.flightData &&
-          message.text.includes(
-            "Here are best selected flight options for you:"
-          )
-        ) {
-          const flightData = session.flightData;
-          console.log("Processing flight data for chat:", chatId, flightData);
-          return {
-            ...message,
-            components: (
-              <FlightOptions
-                key={`flight-options-${chatId}`}
-                flights={flightData.flights}
-                searchQuery={flightData.searchQuery}
-                chatId={chatId}
-              />
-            ),
-          };
-        }
-        return message;
-      });
-    });
-
-    const sortedSessions = loadedSessions.sort(
-      (a, b) =>
-        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-    );
-
-    setChatSessions(sortedSessions);
-    setAllConversations(processedConversations);
-
-    if (
-      loadedActiveChatId &&
-      sortedSessions.find((s) => s.id === loadedActiveChatId)
-    ) {
-      setActiveChatId(loadedActiveChatId);
-    } else if (sortedSessions.length > 0) {
-      setActiveChatId(sortedSessions[0].id);
-    } else {
-      setActiveChatId(null);
-    }
+    // Skip loading saved chats on page refresh
+    setChatSessions([]);
+    setAllConversations({});
+    setActiveChatId(null);
   }, []);
+
+  // useEffect(() => {
+  //   const loadedSessions = loadChatSessions();
+  //   const loadedConversations = loadConversations();
+  //   const loadedActiveChatId = loadActiveChatId();
+
+  //   const processedConversations = { ...loadedConversations };
+  //   Object.entries(processedConversations).forEach(([chatId, messages]) => {
+  //     processedConversations[chatId] = messages.map((message) => {
+  //       const session = loadedSessions.find((s) => s.id === chatId);
+  //       if (
+  //         session?.flightData &&
+  //         message.text.includes(
+  //           "Here are best selected flight options for you:"
+  //         )
+  //       ) {
+  //         const flightData = session.flightData;
+  //         console.log("Processing flight data for chat:", chatId, flightData);
+  //         return {
+  //           ...message,
+  //           components: (
+  //             <FlightOptions
+  //               key={`flight-options-${chatId}`}
+  //               flights={flightData.flights}
+  //               searchQuery={flightData.searchQuery}
+  //               chatId={chatId}
+  //             />
+  //           ),
+  //         };
+  //       }
+  //       return message;
+  //     });
+  //   });
+
+  //   const sortedSessions = loadedSessions.sort(
+  //     (a, b) =>
+  //       new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+  //   );
+
+  //   setChatSessions(sortedSessions);
+  //   setAllConversations(processedConversations);
+
+  //   if (
+  //     loadedActiveChatId &&
+  //     sortedSessions.find((s) => s.id === loadedActiveChatId)
+  //   ) {
+  //     setActiveChatId(loadedActiveChatId);
+  //   } else if (sortedSessions.length > 0) {
+  //     setActiveChatId(sortedSessions[0].id);
+  //   } else {
+  //     setActiveChatId(null);
+  //   }
+  // }, []);
 
   useEffect(() => {
     saveChatSessions(chatSessions);
