@@ -14,23 +14,25 @@ interface FlightOptionsProps {
   chatId: string;
 }
 
-const COUNTDOWN_TIME = 3;
+const getCountdownTime = (flightsCount: number) => {
+  return flightsCount > 2 ? 3 : 15;
+};
 
 export function FlightOptions({
   flights: initialFlights,
   searchQuery: initialSearchQuery,
   chatId,
 }: FlightOptionsProps) {
-  console.log("FlightOptions - Initial Props:", {
-    initialFlights,
-    initialSearchQuery,
+  console.log("FlightOptions - Component Render", {
     chatId,
+    initialFlightsLength: initialFlights?.length,
+    timestamp: new Date().toISOString(),
   });
 
   const [flights, setFlights] = useState<FlightOption[]>(initialFlights);
   const [searchQuery, setSearchQuery] =
     useState<TravelQuery>(initialSearchQuery);
-  const [countdown, setCountdown] = useState(COUNTDOWN_TIME);
+  const [countdown, setCountdown] = useState(getCountdownTime(flights.length));
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [isCancelled, setIsCancelled] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -76,7 +78,8 @@ export function FlightOptions({
       const timer = setTimeout(() => {
         setCountdown(countdown - 1);
         // Calculate progress as a percentage of total time (15 seconds)
-        setProgress(((COUNTDOWN_TIME - countdown) / COUNTDOWN_TIME) * 100);
+        const totalTime = getCountdownTime(flights.length);
+        setProgress(((totalTime - countdown) / totalTime) * 100);
       }, 1000);
       return () => clearTimeout(timer);
     } else if (countdown === 0 && !isRedirecting && !isCancelled) {
@@ -144,11 +147,13 @@ export function FlightOptions({
       const departureTimes = searchQuery.filters
         .filter((f) => f.type === "DEPARTURE_TIME")
         .map((f) => f.value)
-        .join("|");
+        .join(",");
       if (departureTimes) {
         params.append("OW_DEPARTURE_TIME", departureTimes);
       }
     }
+
+    console.log("FlightOptions - Building URL with params:", params.toString());
 
     return `${baseUrl}/flights/international/results?${params.toString()}`;
   };
@@ -156,8 +161,6 @@ export function FlightOptions({
   const handleSeeMoreFlights = () => {
     window.open(buildCleartripUrl(), "_blank", "noopener,noreferrer");
   };
-
-  console.log("searchQuery ---> ", searchQuery);
 
   return (
     <div className="space-y-6 w-full max-w-full overflow-x-hidden">
@@ -287,12 +290,18 @@ export function FlightOptions({
           )}
         </div>
       </div>
-      {/* End Search Query & Filters Summary */}
-      <div className="space-y-4 w-full">
-        {flights.map((flight) => (
-          <FlightCard key={flight.id} flight={flight} />
-        ))}
-      </div>
+
+      {flights.length > 2 ? (
+        <div className="text-center text-muted-foreground py-8">
+          Redirecting to Search Page
+        </div>
+      ) : (
+        <div className="space-y-4 w-full">
+          {flights.map((flight) => (
+            <FlightCard key={flight.id} flight={flight} />
+          ))}
+        </div>
+      )}
 
       {/* See More Flights Button with Progress */}
       <div className="space-y-2 w-full">

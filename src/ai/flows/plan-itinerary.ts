@@ -43,6 +43,8 @@ const slotExtractionPrompt = ai.definePrompt({
         - isRoundTrip (boolean), 
         - returnDate (DD/MM/YYYY), 
         - filter: List of filters to apply to the flight search
+          - CHEAPEST
+          - FASTEST
           - STOPS:0/1/2
           - AIRLINE: 6E/SG/AI/XY etc (comma separated, if multiple airlines are mentioned)
           - DEPARTURE_TIME: 
@@ -51,7 +53,7 @@ const slotExtractionPrompt = ai.definePrompt({
             - AFTERNOON (for flights departing between Noon to 4 pm)
             - EVENING (for flights departing between 4 pm to 8 pm)
             - NIGHT (for flights departing between 8 pm to Midnight)
-          - ARRIVAL_TIME:
+          - ARRIVAL_TIME: 
             - EARLY_MORNING (for flights arriving between Midnight to 8 am)
             - MORNING (for flights arriving between 8 am to Noon)
             - AFTERNOON (for flights arriving between Noon to 4 pm)
@@ -74,7 +76,8 @@ const slotExtractionPrompt = ai.definePrompt({
       6. If user doesn't mention anything about returnDate, please assume it to be null.
 
       Examples:
-      - "I want fastest flight from DEL to BOM" -> {originAirport: "DEL", destinationAirport: "BOM", departDate: null, passengerCount: null, missingFields: ["departDate", "passengerCount"], returnDate: null, isRoundTrip: false, filter: [{type: "FLIGHT_DURATION", value: true}}]
+      - "I want fastest flight from DEL to BOM" -> {originAirport: "DEL", destinationAirport: "BOM", departDate: null, passengerCount: null, missingFields: ["departDate", "passengerCount"], returnDate: null, isRoundTrip: false, filter: [{type: "FASTEST", value: true}}]
+      - "I want cheapest flight from DEL to BOM" -> {originAirport: "DEL", destinationAirport: "BOM", departDate: null, passengerCount: null, missingFields: ["departDate", "passengerCount"], returnDate: null, isRoundTrip: false, filter: [{type: "CHEAPEST", value: true}]}
       - "I want to fly from DEL to BOM on 25/12/2024 with 2 people" -> {originAirport: "DEL", destinationAirport: "BOM", departDate: "25/12/2024", passengerCount: 2, missingFields: [], returnDate: null, isRoundTrip: false, filter: []}
       - "Looking for flights to London" -> {originAirport: null, destinationAirport: "LHR", departDate: null, passengerCount: null, missingFields: ["originAirport", "departDate", "passengerCount"], returnDate: null, isRoundTrip: false, filter: []}
       - "Flight from Mumbai to Delhi" -> {originAirport: "BOM", destinationAirport: "DEL", departDate: null, passengerCount: null, missingFields: ["departDate", "passengerCount"], returnDate: null, isRoundTrip: false, filter: []}
@@ -93,9 +96,18 @@ interface ReviewedFlight extends FlightOption {
 }
 
 async function reviewSelectedFlights(
-  flights: FlightOption[],
+  flights: FlightOption[] | null,
   passengerCount: number
 ): Promise<ReviewedFlight[]> {
+  if (flights == null) {
+    return [];
+  } else if (flights.length > 2) {
+    return flights.map((flight) => ({
+      ...flight,
+      itineraryId: null,
+      itineraryStatus: "SUCCESS",
+    }));
+  }
   console.log("Reviewing selected flights...");
   return Promise.all(
     flights.map(async (flight) => {
@@ -311,44 +323,10 @@ export const planItineraryFlow = ai.defineFlow(
       const allFlights = await flightSearchFn(validQuery);
 
       // Get flights by different categories
-      console.log("Step 7: Categorizing and selecting flights...");
+      console.log(`Step 7: Categorizing and selecting flights...: ${allFlights.length}`);
 
-      // Find cheapest flight
-      const cheapestFlight = [...allFlights].sort(
-        (a, b) => a.price - b.price
-      )[0];
-
-      // Find fastest flight
-      const fastestFlight = [...allFlights].sort(
-        (a, b) => a.durationMinutes - b.durationMinutes
-      )[0];
-
-      // Combine flights, removing duplicates and assigning multiple categories
-      const topFlights = new Map<string, FlightOption>();
-
-      // Add cheapest flight
-      if (cheapestFlight) {
-        cheapestFlight.categories = ["cheapest"];
-        topFlights.set(cheapestFlight.id, cheapestFlight);
-      }
-
-      // Add fastest flight
-      if (fastestFlight) {
-        if (topFlights.has(fastestFlight.id)) {
-          // If this flight is already in the list (e.g., it's also the cheapest)
-          const existingFlight = topFlights.get(fastestFlight.id)!;
-          existingFlight.categories = [
-            ...(existingFlight.categories || []),
-            "fastest",
-          ];
-        } else {
-          fastestFlight.categories = ["fastest"];
-          topFlights.set(fastestFlight.id, fastestFlight);
-        }
-      }
-
-      // Convert Map values to array
-      const selectedFlights = Array.from(topFlights.values());
+      // Currently we are not filtering the flights
+      const selectedFlights = allFlights;
 
       // Review selected flights
       console.log("Step 7a: Reviewing selected flights...");

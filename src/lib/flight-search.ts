@@ -18,10 +18,10 @@ function filterByDepartureTime(
 ): boolean {
   const departureDate = new Date(flight.departTime);
   const istHour = parseInt(
-    departureDate.toLocaleString('en-IN', {
-      hour: '2-digit',
+    departureDate.toLocaleString("en-IN", {
+      hour: "2-digit",
       hour12: false,
-      timeZone: 'Asia/Kolkata'
+      timeZone: "Asia/Kolkata",
     }),
     10
   );
@@ -39,6 +39,23 @@ function filterByDepartureTime(
       return istHour >= 20 || istHour < 0;
     default:
       return true;
+  }
+}
+
+function filterByTag(flights: FlightOption[], tag: string): FlightOption[] {
+  if (flights.length === 0) {
+    return [];
+  }
+  console.log(`--->Flights before filtering: ${flights.length}`);
+  switch (tag) {
+    case "CHEAPEST":
+      return [...flights].sort((a, b) => a.price - b.price).slice(0, 1);
+    case "FASTEST":
+      return [...flights]
+        .sort((a, b) => a.durationMinutes - b.durationMinutes)
+        .slice(0, 1);
+    default:
+      return [flights[0]];
   }
 }
 
@@ -73,8 +90,7 @@ export async function flightSearchFn(
       headers: {
         "Content-Type": "application/json",
         accept: "application/json",
-        referer:
-          `${process.env.CLEARTRIP_BASE_URL}/flights/international/results?adults=1&childs=0&infants=0&depart_date=13/05/2025&return_date=&intl=y&from=DXB&to=RUH&airline=&carrier=&sd=1747129807379&page=&sellingCountry=AE&ssfi=&flexi_search=&ssfc=&origin=DXB%20-%20Dubai,%20AE&destination=RUH%20-%20Riyadh,%20SA&class=Economy&sft=`,
+        referer: `${process.env.CLEARTRIP_BASE_URL}/flights/international/results?adults=1&childs=0&infants=0&depart_date=13/05/2025&return_date=&intl=y&from=DXB&to=RUH&airline=&carrier=&sd=1747129807379&page=&sellingCountry=AE&ssfi=&flexi_search=&ssfc=&origin=DXB%20-%20Dubai,%20AE&destination=RUH%20-%20Riyadh,%20SA&class=Economy&sft=`,
       },
     }
   );
@@ -144,9 +160,12 @@ export async function flightSearchFn(
             filterByDepartureTime(flight, filter.value)
           );
           break;
+        case "FASTEST":
+        case "CHEAPEST":
+          flights = filterByTag(flights, filter.value);
+          break;
       }
     });
   }
-
   return flights;
 }
