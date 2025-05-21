@@ -101,7 +101,7 @@ async function reviewSelectedFlights(
 ): Promise<ReviewedFlight[]> {
   if (flights == null) {
     return [];
-  } else if (flights.length > 0) {
+  } else if (flights.length > 2) {
     return flights.map((flight) => ({
       ...flight,
       itineraryId: null,

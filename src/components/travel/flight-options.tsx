@@ -23,17 +23,16 @@ export function FlightOptions({
   searchQuery: initialSearchQuery,
   chatId,
 }: FlightOptionsProps) {
-  console.log("FlightOptions - Initial Props:", {
-    initialFlights,
-    initialFlightsLength: initialFlights?.length,
-    initialSearchQuery,
+  console.log("FlightOptions - Component Render", {
     chatId,
+    initialFlightsLength: initialFlights?.length,
+    timestamp: new Date().toISOString(),
   });
 
-  const [flights, setFlights] = useState<FlightOption[]>([]);
+  const [flights, setFlights] = useState<FlightOption[]>(initialFlights);
   const [searchQuery, setSearchQuery] =
     useState<TravelQuery>(initialSearchQuery);
-  const [countdown, setCountdown] = useState(0);
+  const [countdown, setCountdown] = useState(getCountdownTime(flights.length));
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [isCancelled, setIsCancelled] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -46,30 +45,17 @@ export function FlightOptions({
       console.log("FlightOptions - Loaded saved data:", savedData);
 
       if (savedData && savedData.flights.length > 0) {
-        console.log("FlightOptions - Using saved flight data:", {
-          flightsCount: savedData.flights.length,
-          searchQuery: savedData.searchQuery,
-          timestamp: savedData.timestamp,
-        });
+        console.log("FlightOptions - Using saved flight data");
         setFlights(savedData.flights);
         setSearchQuery(savedData.searchQuery);
-        setCountdown(getCountdownTime(savedData.flights.length));
-      } else if (initialFlights && initialFlights.length > 0) {
-        console.log("FlightOptions - No saved data, using initial flights:", {
-          flightsCount: initialFlights.length,
-          searchQuery: initialSearchQuery,
-        });
-        setFlights(initialFlights);
-        setCountdown(getCountdownTime(initialFlights.length));
+      } else if (initialFlights.length > 0) {
+        console.log("FlightOptions - No saved data, saving initial flights");
         saveFlightData(chatId, initialFlights, initialSearchQuery);
+      } else {
+        console.log("FlightOptions - No saved data and no initial flights");
       }
-    } else if (initialFlights && initialFlights.length > 0) {
-      console.log("FlightOptions - No chatId, using initial flights:", {
-        flightsCount: initialFlights.length,
-        searchQuery: initialSearchQuery,
-      });
-      setFlights(initialFlights);
-      setCountdown(getCountdownTime(initialFlights.length));
+    } else {
+      console.log("FlightOptions - No chatId available");
     }
   }, [chatId, initialFlights, initialSearchQuery]);
 
@@ -77,66 +63,43 @@ export function FlightOptions({
   useEffect(() => {
     console.log("FlightOptions - Current state:", {
       flights,
-      flightsLength: flights?.length,
       searchQuery,
       chatId,
-      countdown,
-      isRedirecting,
-      isCancelled,
     });
 
     if (chatId && flights.length > 0) {
       console.log("FlightOptions - Saving flight data");
       saveFlightData(chatId, flights, searchQuery);
     }
-  }, [chatId, flights, searchQuery, countdown, isRedirecting, isCancelled]);
+  }, [chatId, flights, searchQuery]);
 
-  // Update countdown time when flights change
   useEffect(() => {
-    if (flights.length > 0) {
-      setCountdown(getCountdownTime(flights.length));
+    if (countdown > 0 && !isCancelled) {
+      const timer = setTimeout(() => {
+        setCountdown(countdown - 1);
+        // Calculate progress as a percentage of total time (15 seconds)
+        const totalTime = getCountdownTime(flights.length);
+        setProgress(((totalTime - countdown) / totalTime) * 100);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (countdown === 0 && !isRedirecting && !isCancelled) {
+      setIsRedirecting(true);
+      const url = buildCleartripUrl();
+      window.open(url, "_blank", "noopener,noreferrer");
     }
-  }, [flights.length]);
+  }, [countdown, isRedirecting, isCancelled]);
 
-  // Update state when props change
-  useEffect(() => {
-    console.log("FlightOptions - Props changed:", {
-      initialFlights,
-      initialFlightsLength: initialFlights?.length,
-      initialSearchQuery,
-    });
+  const handleCancel = () => {
+    setIsCancelled(true);
+  };
 
-    if (initialFlights && initialFlights.length > 0) {
-      console.log("FlightOptions - Updating state with new props");
-      setFlights(initialFlights);
-      setSearchQuery(initialSearchQuery);
-      setCountdown(getCountdownTime(initialFlights.length));
-
-      if (chatId) {
-        console.log("FlightOptions - Saving new flight data");
-        saveFlightData(chatId, initialFlights, initialSearchQuery);
-      }
-    }
-  }, [initialFlights, initialSearchQuery, chatId]);
-
-  // Reset state when chatId changes
-  useEffect(() => {
-    if (chatId) {
-      const savedData = loadFlightData(chatId);
-      if (savedData && savedData.flights.length > 0) {
-        console.log("FlightOptions - Loading data for new chatId");
-        setFlights(savedData.flights);
-        setSearchQuery(savedData.searchQuery);
-        setCountdown(getCountdownTime(savedData.flights.length));
-      }
-    }
-  }, [chatId]);
-
-  console.log("FlightOptions - After useState:", {
-    flights,
-    flightsLength: flights?.length,
-    searchQuery,
-  });
+  if (flights.length === 0) {
+    return (
+      <div className="text-center text-muted-foreground py-8">
+        No flights found for your search criteria.
+      </div>
+    );
+  }
 
   // Function to format date for Cleartrip URL (DD/MM/YYYY)
   const formatDateForUrl = (dateString: string | null) => {
@@ -184,40 +147,20 @@ export function FlightOptions({
       const departureTimes = searchQuery.filters
         .filter((f) => f.type === "DEPARTURE_TIME")
         .map((f) => f.value)
-        .join("|");
+        .join(",");
       if (departureTimes) {
         params.append("OW_DEPARTURE_TIME", departureTimes);
       }
     }
 
+    console.log("FlightOptions - Building URL with params:", params.toString());
+
     return `${baseUrl}/flights/international/results?${params.toString()}`;
-  };
-
-  useEffect(() => {
-    if (countdown > 0 && !isCancelled) {
-      const timer = setTimeout(() => {
-        setCountdown(countdown - 1);
-        // Calculate progress as a percentage of total time
-        const totalTime = getCountdownTime(flights.length);
-        setProgress(((totalTime - countdown) / totalTime) * 100);
-      }, 1000);
-      return () => clearTimeout(timer);
-    } else if (countdown === 0 && !isRedirecting && !isCancelled) {
-      setIsRedirecting(true);
-      const url = buildCleartripUrl();
-      window.open(url, "_blank", "noopener,noreferrer");
-    }
-  }, [countdown, isRedirecting, isCancelled, flights.length]);
-
-  const handleCancel = () => {
-    setIsCancelled(true);
   };
 
   const handleSeeMoreFlights = () => {
     window.open(buildCleartripUrl(), "_blank", "noopener,noreferrer");
   };
-
-  console.log("Flights length:", flights.length);
 
   return (
     <div className="space-y-6 w-full max-w-full overflow-x-hidden">
