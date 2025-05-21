@@ -106,6 +106,7 @@ export async function flightSearchFn(
     return []; // Return empty array if no flights found
   }
 
+  console.log("data.cards: ", data.cards[0].length);
   let flights = data.cards[0].map((card: any) => {
     const firstFlight = card.sectorKeys[0].split("|")[0];
     const lastFlight =
@@ -140,6 +141,8 @@ export async function flightSearchFn(
   });
 
   // Apply filters if they exist in the query
+  console.log("flights before filters: ", flights.length);
+  console.log("query.filters: ", query.filters);
   if (query.filters) {
     // First apply all non-tag filters
     const nonTagFilters = query.filters.filter(
@@ -159,7 +162,10 @@ export async function flightSearchFn(
           );
           break;
         case "AIRLINE":
-          const airlines = filter.value.split(",").map((code) => code.trim());
+          const airlines = filter.value
+            .split(",")
+            .filter((airlineCode) => airlineCode.length == 2)
+            .map((code) => code.trim());
           flights = flights.filter((flight: FlightOption) =>
             filterByAirline(flight, airlines)
           );
@@ -179,5 +185,6 @@ export async function flightSearchFn(
       flights = filterByTag(flights, lastTagFilter.type);
     }
   }
+  console.log("flights after filters: ", flights.length);
   return flights;
 }

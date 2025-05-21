@@ -12,7 +12,7 @@ export default function InitialPromptDisplay() {
         Your personal AI travel assistant. Ask me anything about flights, destinations, or planning your next trip.
       </p>
       
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl w-full">
+      {/* <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl w-full">
         <Card className="p-4 hover:bg-muted/30 cursor-pointer transition-colors duration-150 rounded-lg shadow-sm border-border/70">
           <CardTitle className="text-md font-medium text-foreground">Find cheap flights</CardTitle>
           <CardDescription className="text-sm text-muted-foreground mt-1">to Paris for next month</CardDescription>
@@ -29,7 +29,7 @@ export default function InitialPromptDisplay() {
           <CardTitle className="text-md font-medium text-foreground">Best time to visit</CardTitle>
           <CardDescription className="text-sm text-muted-foreground mt-1">the cherry blossoms in Japan</CardDescription>
         </Card>
-      </div>
+      </div> */}
     </div>
   );
 }

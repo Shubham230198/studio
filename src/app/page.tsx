@@ -251,7 +251,7 @@ export default function HomePage() {
             text:
               result.flights.length > 0
                 ? "Redirecting you to Search Page"
-                : "Here are best selected flight options for you:",
+                : "No flights found",
             timestamp: new Date(),
             components: (
               <FlightOptions
