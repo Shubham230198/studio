@@ -6,8 +6,13 @@ import { flightSearchFn } from "@/lib/flight-search";
 import { reviewFlight } from "@/lib/flight-api";
 import type { TravelQuery, FlightOption } from "@/types/travel";
 
-
-const mandatoryFields = ["originAirport", "destinationAirport", "departDate", "passengerCount", "isRoundTrip"];
+const mandatoryFields = [
+  "originAirport",
+  "destinationAirport",
+  "departDate",
+  "passengerCount",
+  "isRoundTrip",
+];
 
 const slotExtractionPrompt = ai.definePrompt({
   name: "slotExtractionPrompt",
@@ -46,19 +51,13 @@ const slotExtractionPrompt = ai.definePrompt({
           - CHEAPEST
           - FASTEST
           - STOPS:0/1/2
-          - AIRLINE: 6E/SG/AI/XY etc (comma separated, if multiple airlines are mentioned)
-          - DEPARTURE_TIME: 
+          - AIRLINE: 6E/SG/AI/XY etc (comma separated airline codes, if multiple airlines are mentioned)
+          - DEPARTURE_TIME: (could be EARLY_MORNING, MORNING, AFTERNOON, EVENING, NIGHT)
             - EARLY_MORNING (for flights departing between Midnight to 8 am)
             - MORNING (for flights departing between 8 am to Noon)
             - AFTERNOON (for flights departing between Noon to 4 pm)
             - EVENING (for flights departing between 4 pm to 8 pm)
             - NIGHT (for flights departing between 8 pm to Midnight)
-          - ARRIVAL_TIME: 
-            - EARLY_MORNING (for flights arriving between Midnight to 8 am)
-            - MORNING (for flights arriving between 8 am to Noon)
-            - AFTERNOON (for flights arriving between Noon to 4 pm)
-            - EVENING (for flights arriving between 4 pm to 8 pm)
-            - NIGHT (for flights arriving between 8 pm to Midnight)
 
 
       Instructions:
@@ -66,6 +65,7 @@ const slotExtractionPrompt = ai.definePrompt({
       - Compulsory fields are originAirport, destinationAirport, departDate, passengerCount, isRoundTrip.
       - If user doesn't mention the complete date, please use the most matching upcoming date, (e.g. if user says "next Friday", please use the date of next Friday)
       - If user doesn't mention anything about date, please mark it as null.
+      - There can be multiple filters, please return all the filters in the filters array.
 
       Rules:
       1. originAirport and destinationAirport must be valid IATA codes (3 letters)
@@ -84,6 +84,8 @@ const slotExtractionPrompt = ai.definePrompt({
       - "I want to fly from DEL to DXB on 25/12 and return on 27/12" -> {originAirport: "DEL", destinationAirport: "DXB", departDate: "25/12/2025", passengerCount: 1, missingFields: [], returnDate: "27/12/2025", isRoundTrip: true, filter: []}
       - "Help me choose a flight to fly from Delhi to Bangalore next Friday" -> {originAirport: "DEL", destinationAirport: "BLR", departDate: "23/05/2025", passengerCount: null, missingFields: ["passengerCount"], returnDate: null, isRoundTrip: false, filter: []}
       - "Flight from Mumbai to Dubai from 02/11 to 04/11" -> {originAirport: "BOM", destinationAirport: "DXB", departDate: "02/11/2025", passengerCount: 0, missingFields: ["passengerCount"], returnDate: "04/11/2025", isRoundTrip: true, filter: []}
+      - "Delhi to New York, 22nd June indigo flights Early Morning" -> {originAirport: "DEL", destinationAirport: "JFK", departDate: "22/06/2025", passengerCount: null, missingFields: ["passengerCount"], returnDate: null, isRoundTrip: false, filter: [{type: "DEPARTURE_TIME", value: "EARLY_MORNING"}]}
+      - "Delhi to New York, 22nd June indigo flights night flights only" -> {originAirport: "DEL", destinationAirport: "JFK", departDate: "22/06/2025", passengerCount: null, missingFields: ["passengerCount"], returnDate: null, isRoundTrip: false, filter: [{type: "DEPARTURE_TIME", value: "NIGHT"}, {type: "AIRLINE", value: "6E"}]}
 
       User: {{{userMessage}}}
 
@@ -263,7 +265,7 @@ export const planItineraryFlow = ai.defineFlow(
         null,
       departDate: extraction.departDate ?? previousQuery?.departDate ?? null,
       passengerCount:
-        extraction.passengerCount ?? previousQuery?.passengerCount ?? 1,
+        (extraction.passengerCount ?? previousQuery?.passengerCount ?? 1) || 1,
       returnDate: extraction.returnDate ?? previousQuery?.returnDate ?? null,
       isRoundTrip:
         extraction.isRoundTrip ?? previousQuery?.isRoundTrip ?? false,
@@ -274,11 +276,18 @@ export const planItineraryFlow = ai.defineFlow(
     // 2. Check for missing fields and ask follow-up questions
     console.log("Step 4: Checking for missing fields...");
     const missingFields = Object.entries(merged)
-      .filter(([key, value]) => (mandatoryFields.includes(key) && (value === null || value == "null")))
+      .filter(
+        ([key, value]) =>
+          mandatoryFields.includes(key) && (value === null || value == "null")
+      )
       .map(([key]) => key);
     console.log("Missing fields:", missingFields);
 
-    if (merged.isRoundTrip && merged.isRoundTrip == true && merged.returnDate == null) {
+    if (
+      merged.isRoundTrip &&
+      merged.isRoundTrip == true &&
+      merged.returnDate == null
+    ) {
       missingFields.push("returnDate");
     }
 
@@ -323,7 +332,9 @@ export const planItineraryFlow = ai.defineFlow(
       const allFlights = await flightSearchFn(validQuery);
 
       // Get flights by different categories
-      console.log(`Step 7: Categorizing and selecting flights...: ${allFlights.length}`);
+      console.log(
+        `Step 7: Categorizing and selecting flights...: ${allFlights.length}`
+      );
 
       // Currently we are not filtering the flights
       const selectedFlights = allFlights;
