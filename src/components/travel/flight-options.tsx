@@ -141,7 +141,7 @@ export function FlightOptions({
         .map((f) => f.value)
         .join(",");
       if (airlines) {
-        params.append("airline", airlines);
+        params.append("airlines", airlines);
       }
 
       const departureTimes = searchQuery.filters

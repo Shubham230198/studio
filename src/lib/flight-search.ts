@@ -141,7 +141,16 @@ export async function flightSearchFn(
 
   // Apply filters if they exist in the query
   if (query.filters) {
-    query.filters.forEach((filter) => {
+    // First apply all non-tag filters
+    const nonTagFilters = query.filters.filter(
+      (filter) => filter.type !== "FASTEST" && filter.type !== "CHEAPEST"
+    );
+    const tagFilters = query.filters.filter(
+      (filter) => filter.type === "FASTEST" || filter.type === "CHEAPEST"
+    );
+
+    // Apply non-tag filters first
+    nonTagFilters.forEach((filter) => {
       switch (filter.type) {
         case "STOPS":
           const maxStops = parseInt(filter.value);
@@ -160,12 +169,15 @@ export async function flightSearchFn(
             filterByDepartureTime(flight, filter.value)
           );
           break;
-        case "FASTEST":
-        case "CHEAPEST":
-          flights = filterByTag(flights, filter.value);
-          break;
       }
     });
+
+    // Then apply tag filters if any
+    if (tagFilters.length > 0) {
+      // Use the last tag filter if multiple are provided
+      const lastTagFilter = tagFilters[tagFilters.length - 1];
+      flights = filterByTag(flights, lastTagFilter.type);
+    }
   }
   return flights;
 }
