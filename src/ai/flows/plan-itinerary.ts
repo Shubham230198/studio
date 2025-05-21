@@ -263,7 +263,7 @@ export const planItineraryFlow = ai.defineFlow(
         null,
       departDate: extraction.departDate ?? previousQuery?.departDate ?? null,
       passengerCount:
-        extraction.passengerCount ?? previousQuery?.passengerCount ?? null,
+        extraction.passengerCount ?? previousQuery?.passengerCount ?? 1,
       returnDate: extraction.returnDate ?? previousQuery?.returnDate ?? null,
       isRoundTrip:
         extraction.isRoundTrip ?? previousQuery?.isRoundTrip ?? false,
