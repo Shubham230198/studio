@@ -111,6 +111,8 @@ export function FlightOptions({
       } else if (initialFlights.length > 0) {
         console.log("FlightOptions - No saved data, saving initial flights");
         saveFlightData(chatId, initialFlights, initialSearchQuery);
+        setFlights(initialFlights);
+        setSearchQuery(initialSearchQuery);
       } else {
         console.log("FlightOptions - No saved data and no initial flights");
       }
